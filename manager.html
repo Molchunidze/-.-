@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Теплосбережение — Панель Менеджера</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .ts-green { color: #9ec827; }
+        .bg-ts-green { background-color: #9ec827; }
+    </style>
+</head>
+<body class="bg-[#f9fafb] text-[#333]">
+
+    <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-ts-green rounded flex items-center justify-center text-white font-bold shadow-md">Т</div>
+            <h1 class="font-black text-xl tracking-tighter uppercase italic">Теплосбережение.Доставка</h1>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="location.reload()" class="bg-white border border-gray-200 px-4 py-2 rounded text-sm font-bold hover:bg-gray-50">Обновить данные</button>
+        </div>
+    </header>
+
+    <div class="p-8 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-1">Всего доставок</p>
+                <p id="total-count" class="text-3xl font-black italic">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-ts-green">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-1">Свободные слоты</p>
+                <p class="text-3xl font-black italic ts-green">Есть</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="font-bold text-lg uppercase italic">Текущие заказы</h2>
+                <span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500 font-bold uppercase">Данные из PostgreSQL</span>
+            </div>
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-xs font-bold text-gray-400 uppercase">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Клиент / Телефон</th>
+                        <th class="p-4">Адрес доставки</th>
+                        <th class="p-4">Товары</th>
+                        <th class="p-4">Дата</th>
+                        <th class="p-4">Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="manager-table-body" class="divide-y divide-gray-50">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'ВАШ_URL_ИЗ_SUPABASE';
+        const SUPABASE_KEY = 'ВАШ_ANON_KEY_ИЗ_SUPABASE';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadDeliveries() {
+            const { data, error } = await supabase
+                .from('deliveries')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (data) {
+                const tbody = document.getElementById('manager-table-body');
+                tbody.innerHTML = '';
+                document.getElementById('total-count').innerText = data.length;
+
+                data.forEach(item => {
+                    const statusStyle = item.status === 'pending' 
+                        ? 'bg-yellow-50 text-yellow-600' 
+                        : 'bg-green-50 text-green-600';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="p-4 font-black ts-green">#${item.id}</td>
+                            <td class="p-4 font-bold text-sm">${item.client_name}<br><span class="text-xs text-gray-400 font-normal">${item.phone}</span></td>
+                            <td class="p-4 text-sm font-medium">${item.address}</td>
+                            <td class="p-4 text-xs text-gray-500">${item.items}</td>
+                            <td class="p-4 text-sm font-bold">${item.delivery_date}</td>
+                            <td class="p-4">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusStyle}">
+                                    ${item.status === 'pending' ? 'Ожидает' : 'Завершено'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        loadDeliveries();
+    </script>
+</body>
+</html>
