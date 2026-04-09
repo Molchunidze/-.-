@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Теплосбережение | CRM Final</title>
+    <title>Теплосбережение | CRM 3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #F9FAFB; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #F8F9FB; color: #111827; }
         .hidden { display: none !important; }
-        .ios-card { background: white; border-radius: 24px; border: 1px solid #E5E7EB; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden; }
-        .date-label { padding: 10px 20px; background: #F3F4F6; font-size: 10px; font-weight: 900; color: #9CA3AF; text-transform: uppercase; }
+        .ios-card { background: white; border-radius: 24px; border: 1px solid #E5E7EB; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .input-field { background: #F3F4F6; border-radius: 12px; padding: 12px 16px; width: 100%; border: 2px solid transparent; transition: 0.2s; font-weight: 500; }
+        .input-field:focus { border-color: #9ec827; background: white; outline: none; }
+        .btn-primary { background: #9ec827; color: white; font-weight: 800; border-radius: 14px; padding: 12px 24px; transition: 0.2s; }
+        .btn-primary:active { scale: 0.95; }
+        .tab-active { color: #9ec827 !important; border-bottom: 2px solid #9ec827; }
+        .shift-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -18,162 +23,181 @@
     <div id="auth-screen" class="fixed inset-0 z-[500] bg-white flex flex-col items-center justify-center p-6">
         <div class="w-20 h-20 bg-[#9ec827] rounded-[24px] mb-8 flex items-center justify-center text-white text-4xl font-black shadow-xl">Т</div>
         <div class="w-full max-w-sm space-y-4">
-            <input id="u-login" type="text" placeholder="Логин" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827]">
-            <input id="u-pass" type="password" placeholder="Пароль" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827]">
-            <button onclick="globalLogin()" class="w-full py-5 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">ВОЙТИ</button>
+            <input id="u-login" type="text" placeholder="Логин" class="input-field">
+            <input id="u-pass" type="password" placeholder="Пароль" class="input-field">
+            <button onclick="globalLogin()" class="w-full btn-primary py-4 text-lg">ВОЙТИ В СИСТЕМУ</button>
         </div>
     </div>
 
     <div id="manager-ui" class="hidden h-screen flex">
-        <aside class="w-64 bg-white border-r p-6 flex flex-col">
-            <div class="text-[10px] font-black text-[#9ec827] mb-10 uppercase tracking-widest">Админ-панель</div>
-            <nav class="space-y-2 flex-1">
-                <button onclick="switchTab('orders')" class="w-full text-left p-4 rounded-xl font-bold text-sm bg-gray-50">📦 Заказы</button>
-                <button onclick="switchTab('staff')" class="w-full text-left p-4 rounded-xl font-bold text-sm text-gray-400">👥 Команда</button>
+        <aside class="w-72 bg-white border-r p-8 flex flex-col">
+            <div class="text-[10px] font-black text-[#9ec827] mb-12 uppercase tracking-widest">Control Panel</div>
+            <nav class="space-y-4 flex-1">
+                <button onclick="switchTab('orders')" class="block w-full text-left font-bold text-gray-400 hover:text-black">📦 Заказы</button>
+                <button onclick="switchTab('staff')" class="block w-full text-left font-bold text-gray-400 hover:text-black">👥 Курьеры</button>
             </nav>
-            <button onclick="location.reload()" class="text-xs text-red-400 font-bold">Выйти</button>
+            <button onclick="location.reload()" class="text-xs font-bold text-gray-300">ВЫЙТИ</button>
         </aside>
-        <main class="flex-1 p-10 overflow-auto">
+
+        <main class="flex-1 overflow-auto p-12">
             <div id="tab-orders">
-                <div class="flex justify-between items-center mb-8">
-                    <h1 class="text-3xl font-black">График заказов</h1>
-                    <button onclick="createNewOrder()" class="bg-[#9ec827] text-white px-6 py-3 rounded-xl font-bold shadow-lg">+ Создать</button>
+                <div class="grid grid-cols-3 gap-10">
+                    <div class="col-span-2">
+                        <h1 class="text-4xl font-black mb-8">График</h1>
+                        <div id="orders-list" class="space-y-6"></div>
+                    </div>
+                    <div>
+                        <div class="ios-card p-6 sticky top-0">
+                            <h2 class="text-xl font-black mb-6">Новый заказ</h2>
+                            <div class="space-y-4">
+                                <div><label class="text-[10px] font-black text-gray-400 uppercase">Адрес</label><input id="f-addr" class="input-field mt-1" placeholder="Улица, дом..."></div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label class="text-[10px] font-black text-gray-400 uppercase">Дата</label><input id="f-date" type="date" class="input-field mt-1"></div>
+                                    <div><label class="text-[10px] font-black text-gray-400 uppercase">Время</label><input id="f-time" type="time" class="input-field mt-1"></div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">Курьер</label>
+                                    <select id="f-courier" class="input-field mt-1"></select>
+                                </div>
+                                <button onclick="saveOrder()" class="w-full btn-primary mt-4 uppercase tracking-widest text-xs py-4">Добавить заказ</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div id="orders-list-render" class="space-y-6"></div>
             </div>
+
             <div id="tab-staff" class="hidden">
-                <h1 class="text-3xl font-black mb-8">Сотрудники</h1>
-                <div id="staff-list-render" class="grid grid-cols-2 gap-4"></div>
+                <h1 class="text-4xl font-black mb-8">Команда</h1>
+                <div id="staff-list" class="grid grid-cols-3 gap-6"></div>
             </div>
         </main>
     </div>
 
     <div id="courier-ui" class="hidden min-h-screen bg-[#F2F2F7]">
-        <header class="p-6 bg-white border-b flex justify-between items-center">
-            <h1 id="courier-welcome" class="text-2xl font-black">Задачи</h1>
-            <button onclick="location.reload()" class="text-red-400 font-bold">Выход</button>
-        </header>
-        <div id="courier-orders-render" class="p-4 space-y-4"></div>
+        <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl">
+            <header class="p-8 pt-12 border-b">
+                <h1 id="c-welcome" class="text-3xl font-black tracking-tighter">Мои смены</h1>
+                <div class="flex gap-4 mt-6">
+                    <button onclick="switchCourierMode('list')" id="m-list" class="font-bold text-sm tab-active">Заказы</button>
+                    <button onclick="switchCourierMode('cal')" id="m-cal" class="font-bold text-sm text-gray-400">Календарь</button>
+                </div>
+            </header>
+
+            <div id="courier-content" class="p-6">
+                </div>
+        </div>
     </div>
 
     <script>
         const SB_URL = 'https://qwhqlwqdlatajzsjdzyu.supabase.co';
         const SB_KEY = 'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY';
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-        let userSession = null;
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
+        let session = null;
 
         async function globalLogin() {
             const l = document.getElementById('u-login').value;
             const p = document.getElementById('u-pass').value;
-            const { data, error } = await supabaseClient.from('employees').select('*').eq('login', l).eq('password', p).single();
-
+            const { data } = await supabase.from('employees').select('*').eq('login', l).eq('password', p).single();
             if (data) {
-                userSession = data;
+                session = data;
                 document.getElementById('auth-screen').classList.add('hidden');
-                if (data.role === 'admin') {
-                    document.getElementById('manager-ui').classList.remove('hidden');
-                    loadAdminData();
-                } else {
-                    document.getElementById('courier-ui').classList.remove('hidden');
-                    loadCourierData();
-                }
-            } else { alert("Ошибка входа"); }
+                data.role === 'admin' ? (document.getElementById('manager-ui').classList.remove('hidden'), loadAdmin()) : (document.getElementById('courier-ui').classList.remove('hidden'), switchCourierMode('list'));
+            } else alert("Ошибка входа");
         }
 
-        async function loadAdminData() {
-            // Загружаем заказы
-            const { data: orders, error } = await supabaseClient.from('deliveries').select('*, employees(full_name)').order('delivery_date', {ascending: true});
-            const render = document.getElementById('orders-list-render');
-            render.innerHTML = '';
+        // --- ЛОГИКА АДМИНА ---
+        async function loadAdmin() {
+            const { data: ords } = await supabase.from('deliveries').select('*, employees(full_name)').order('delivery_date');
+            const { data: couriers } = await supabase.from('employees').select('*').eq('role', 'courier');
+            
+            // Наполнение селектора курьеров
+            document.getElementById('f-courier').innerHTML = couriers.map(c => `<option value="${c.id}">${c.full_name}</option>`).join('');
+            document.getElementById('f-date').valueAsDate = new Date();
 
-            if (orders) {
-                const grouped = orders.reduce((acc, x) => {
-                    const d = x.delivery_date || 'Без даты';
-                    if (!acc[d]) acc[d] = [];
-                    acc[d].push(x);
-                    return acc;
-                }, {});
+            const list = document.getElementById('orders-list');
+            list.innerHTML = '';
+            const grouped = (ords || []).reduce((acc, o) => {
+                const d = o.delivery_date;
+                if(!acc[d]) acc[d] = [];
+                acc[d].push(o);
+                return acc;
+            }, {});
 
-                Object.keys(grouped).forEach(date => {
-                    let html = `<div class="ios-card"><div class="date-label">${date}</div><table class="w-full">`;
-                    grouped[date].forEach(o => {
-                        html += `<tr class="border-t border-gray-50">
-                            <td class="p-4 font-black text-lg w-24">${o.delivery_time || ''}</td>
-                            <td class="p-4 font-bold text-sm">${o.address}</td>
-                            <td class="p-4 text-xs text-blue-500 font-bold uppercase">${o.employees?.full_name || 'Не назначен'}</td>
-                            <td class="p-4 text-right"><button onclick="deleteOrder('${o.id}')" class="text-red-300">❌</button></td>
-                        </tr>`;
-                    });
-                    render.innerHTML += html + `</table></div>`;
+            Object.keys(grouped).forEach(date => {
+                let html = `<div class="ios-card mb-8"><div class="p-4 bg-gray-50 text-[10px] font-black text-gray-400 uppercase">${date}</div><table class="w-full">`;
+                grouped[date].forEach(o => {
+                    html += `<tr class="border-t border-gray-50"><td class="p-4 font-black w-24">${o.delivery_time}</td><td class="p-4 font-bold text-sm">${o.address}</td><td class="p-4 text-xs font-bold text-[#9ec827]">${o.employees?.full_name}</td><td class="p-4 text-right"><button onclick="deleteOrder('${o.id}')" class="text-red-200">✕</button></td></tr>`;
                 });
-            }
-            loadStaffList();
+                list.innerHTML += html + `</table></div>`;
+            });
+            loadStaff();
         }
 
-        async function loadStaffList() {
-            const { data } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
-            document.getElementById('staff-list-render').innerHTML = (data || []).map(s => `
-                <div class="ios-card p-4 flex items-center gap-3">
-                    <div class="w-10 h-10 bg-[#9ec827] rounded-full text-white flex items-center justify-center font-black">${s.full_name[0]}</div>
-                    <div><div class="font-bold text-sm">${s.full_name}</div><div class="text-[10px] text-gray-400 uppercase">${s.login}</div></div>
+        async function saveOrder() {
+            const order = {
+                address: document.getElementById('f-addr').value,
+                delivery_date: document.getElementById('f-date').value,
+                delivery_time: document.getElementById('f-time').value,
+                courier_id: document.getElementById('f-courier').value,
+                client_name: 'ООО Теплосбережение'
+            };
+            if(!order.address || !order.delivery_time) return alert("Заполни все поля");
+            await supabase.from('deliveries').insert([order]);
+            document.getElementById('f-addr').value = '';
+            loadAdmin();
+        }
+
+        async function loadStaff() {
+            const { data } = await supabase.from('employees').select('*').eq('role', 'courier');
+            document.getElementById('staff-list').innerHTML = (data || []).map(s => `<div class="ios-card p-6 flex items-center gap-4"><div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center font-black">${s.full_name[0]}</div><div><div class="font-black">${s.full_name}</div><div class="text-xs text-gray-400">${s.login}</div></div></div>`).join('');
+        }
+
+        async function deleteOrder(id) { await supabase.from('deliveries').delete().eq('id', id); loadAdmin(); }
+
+        // --- ЛОГИКА КУРЬЕРА ---
+        function switchCourierMode(mode) {
+            document.getElementById('m-list').className = mode === 'list' ? 'font-bold text-sm tab-active' : 'font-bold text-sm text-gray-400';
+            document.getElementById('m-cal').className = mode === 'cal' ? 'font-bold text-sm tab-active' : 'font-bold text-sm text-gray-400';
+            mode === 'list' ? loadCourierOrders() : renderCourierCalendar();
+        }
+
+        async function loadCourierOrders() {
+            const { data } = await supabase.from('deliveries').select('*').eq('courier_id', session.id).order('delivery_time');
+            document.getElementById('courier-content').innerHTML = (data || []).map(d => `
+                <div class="ios-card p-6 mb-4">
+                    <div class="flex justify-between mb-4"><span class="text-3xl font-black text-[#9ec827]">${d.delivery_time}</span><span class="text-[10px] font-bold text-gray-300 uppercase">${d.delivery_date}</span></div>
+                    <div class="text-lg font-bold mb-6">${d.address}</div>
+                    <button class="w-full btn-primary py-4">ДОСТАВЛЕНО</button>
                 </div>
-            `).join('');
+            `).join('') || '<div class="text-center py-20 text-gray-300 font-bold">Заказов пока нет</div>';
         }
 
-        async function createNewOrder() {
-            const { data: staff } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
-            const addr = prompt("Адрес:");
-            const time = prompt("Время (например, 14:00):");
-            const date = prompt("Дата (гггг-мм-дд):", new Date().toISOString().split('T')[0]);
+        async function renderCourierCalendar() {
+            const { data: shifts } = await supabase.from('shifts').select('*').eq('employee_id', session.id);
+            const activeDates = (shifts || []).map(s => s.shift_date);
             
-            if (!staff || staff.length === 0) return alert("Сначала добавьте курьеров");
+            let html = `<p class="text-xs text-gray-400 font-bold mb-6 uppercase tracking-widest">Нажмите на день, чтобы выйти в смену</p><div class="grid grid-cols-7 gap-2">`;
+            const days = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+            days.forEach(d => html += `<div class="text-center text-[10px] font-black text-gray-300 mb-2">${d}</div>`);
             
-            const staffList = staff.map((s, i) => `${i+1}. ${s.full_name}`).join('\n');
-            const choice = prompt(`Выберите курьера:\n${staffList}`);
-            const courier = staff[parseInt(choice) - 1];
-
-            if (addr && courier) {
-                const { error } = await supabaseClient.from('deliveries').insert([{
-                    address: addr,
-                    delivery_time: time,
-                    delivery_date: date,
-                    courier_id: courier.id, // Это UUID
-                    client_name: 'Теплосбережение'
-                }]);
-                if (error) alert("Ошибка базы: " + error.message);
-                loadAdminData();
+            const now = new Date();
+            for(let i=0; i<28; i++) {
+                const date = new Date(); date.setDate(now.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                const isActive = activeDates.includes(dateStr);
+                html += `<div onclick="toggleShift('${dateStr}')" class="shift-day ${isActive ? 'bg-[#9ec827] text-white shadow-lg' : 'bg-gray-50 text-gray-400'}">${date.getDate()}</div>`;
             }
+            document.getElementById('courier-content').innerHTML = html + `</div>`;
         }
 
-        async function loadCourierData() {
-            document.getElementById('courier-welcome').innerText = userSession.full_name;
-            const { data, error } = await supabaseClient.from('deliveries')
-                .select('*')
-                .eq('courier_id', userSession.id)
-                .order('delivery_time', {ascending: true});
-
-            const render = document.getElementById('courier-orders-render');
-            if (data && data.length > 0) {
-                render.innerHTML = data.map(d => `
-                    <div class="ios-card p-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-3xl font-black text-[#9ec827]">${d.delivery_time}</span>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase">${d.delivery_date}</span>
-                        </div>
-                        <div class="text-xl font-bold mb-6">${d.address}</div>
-                        <button class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg">ДОСТАВЛЕНО</button>
-                    </div>
-                `).join('');
+        async function toggleShift(date) {
+            const { data } = await supabase.from('shifts').select('*').eq('employee_id', session.id).eq('shift_date', date).single();
+            if(data) {
+                await supabase.from('shifts').delete().eq('id', data.id);
             } else {
-                render.innerHTML = '<div class="text-center p-20 text-gray-400 font-bold">На сегодня заказов нет</div>';
+                await supabase.from('shifts').insert([{ employee_id: session.id, shift_date: date }]);
             }
-        }
-
-        async function deleteOrder(id) {
-            if (confirm("Удалить заказ?")) {
-                await supabaseClient.from('deliveries').delete().eq('id', id);
-                loadAdminData();
-            }
+            renderCourierCalendar();
         }
 
         function switchTab(t) {
