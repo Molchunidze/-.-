@@ -8,234 +8,223 @@
 <!-- Montserrat -->
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
 
+<!-- TailwindCSS -->
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU"></script>
+
+<!-- Yandex Maps -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=098256e2-2a2e-462f-98c4-a62174620023&lang=ru_RU"></script>
 
 <style>
-body {
-    background:#F8F9FB;
-    font-family: 'Montserrat', -apple-system, system-ui, sans-serif;
-}
-.card { background:white; border-radius:20px; padding:16px; margin-bottom:12px; }
-.input { background:#f3f4f6; padding:12px; border-radius:12px; width:100%; }
-.btn { background:#9ec827; color:white; padding:12px; border-radius:14px; width:100%; font-weight:600; }
+body { font-family: 'Montserrat', sans-serif; background:#F8F9FB; }
 .hidden { display:none; }
+.input { width:100%; padding:12px; border-radius:12px; margin-bottom:12px; border:1px solid #ccc; }
+.btn { width:100%; padding:12px; border:none; border-radius:12px; background:#9ec827; color:white; font-weight:600; cursor:pointer; }
+.card { background:white; padding:16px; border-radius:20px; margin-bottom:12px; }
 </style>
 </head>
-
 <body>
 
-<!-- AUTH -->
-<div id="auth" class="h-screen flex items-center justify-center flex-col p-6">
-    <div class="text-3xl font-black mb-6 text-[#9ec827]">Теплосбережение CRM</div>
-    <input id="login" placeholder="Логин" class="input mb-3 text-center">
-    <input id="pass" type="password" placeholder="Пароль" class="input mb-3 text-center">
-    <button onclick="loginUser()" class="btn">Войти</button>
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="h-screen flex flex-col justify-center items-center p-6">
+  <h1 class="text-3xl font-black mb-6 text-[#9ec827]">Теплосбережение CRM</h1>
+  <input id="login" placeholder="Логин" class="input">
+  <input id="password" type="password" placeholder="Пароль" class="input">
+  <button id="btn-login" class="btn">Войти</button>
 </div>
 
-<!-- ADMIN -->
+<!-- ADMIN UI -->
 <div id="admin-ui" class="hidden p-6">
+  <h2 class="text-xl font-black mb-4">Админка — Заказы</h2>
+  <div id="orders-list"></div>
 
-    <h2 class="text-xl font-black mb-4">Заказы</h2>
-    <div id="orders"></div>
+  <div class="card">
+    <h3 class="font-bold mb-2">Новый заказ</h3>
+    <input id="addr" placeholder="Адрес" class="input">
+    <input id="client-name" placeholder="Имя клиента" class="input">
+    <input id="client-phone" placeholder="Телефон" class="input">
+    <input id="date" type="date" class="input">
+    <input id="time" type="time" class="input">
+    <textarea id="comment" placeholder="Комментарий" class="input"></textarea>
+    <select id="courier" class="input"></select>
+    <button onclick="saveOrder()" class="btn">Создать заказ</button>
+  </div>
 
-    <div class="card mt-4">
-        <h3 class="font-bold mb-2">Новый заказ</h3>
-        <input id="addr" placeholder="Адрес" class="input mb-2">
-        <input id="name" placeholder="Клиент" class="input mb-2">
-        <input id="phone" placeholder="Телефон" class="input mb-2">
-        <div class="flex gap-2 mb-2">
-            <input id="date" type="date" class="input">
-            <input id="time" type="time" class="input">
-        </div>
-        <select id="courier" class="input mb-2"></select>
-        <textarea id="comm" placeholder="Комментарий" class="input mb-2"></textarea>
-        <button onclick="saveOrder()" class="btn">Создать заказ</button>
-    </div>
-
-    <div class="card mt-4">
-        <h3 class="font-bold mb-2">Сотрудники</h3>
-        <input id="e-login" placeholder="Логин" class="input mb-2">
-        <input id="e-pass" placeholder="Пароль" class="input mb-2">
-        <input id="e-name" placeholder="Имя" class="input mb-2">
-        <select id="e-role" class="input mb-2">
-            <option value="courier">Курьер</option>
-            <option value="admin">Админ</option>
-        </select>
-        <button onclick="createEmployee()" class="btn">Добавить</button>
-    </div>
-
-    <div class="card mt-4">
-        <h3 class="font-bold mb-2">Смены</h3>
-        <div id="shift-monitor"></div>
-    </div>
-
+  <h2 class="text-xl font-black mt-6 mb-4">Смены сотрудников</h2>
+  <div id="monitoring-grid"></div>
 </div>
 
-<!-- COURIER -->
+<!-- COURIER UI -->
 <div id="courier-ui" class="hidden p-6">
+  <h2 class="text-xl font-black mb-4">Мои заказы</h2>
+  <div id="courier-orders"></div>
 
-    <h2 class="text-xl font-black mb-4">Мои заказы</h2>
-    <div id="c-orders"></div>
+  <h2 class="text-xl font-black mt-6 mb-4">Мои смены</h2>
+  <div id="courier-shifts"></div>
+  <input type="date" id="shift-date" class="input">
+  <button onclick="addShift()" class="btn">Добавить смену</button>
+</div>
 
-    <div class="card mt-4">
-        <h3 class="font-bold mb-2">Мои смены</h3>
-        <input type="date" id="shift-date" class="input mb-2">
-        <button onclick="addShift()" class="btn">Добавить смену</button>
-        <div id="my-shifts" class="mt-3"></div>
-    </div>
-
+<!-- MAP MODAL -->
+<div id="map-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+  <div class="bg-white w-full max-w-2xl h-[70vh] rounded-2xl relative">
+    <div id="yandex-map" class="w-full h-full rounded-2xl"></div>
+    <button onclick="document.getElementById('map-modal').classList.add('hidden')" class="absolute top-2 right-2 bg-gray-200 px-3 py-1 rounded">Закрыть</button>
+  </div>
 </div>
 
 <script>
-const supabaseClient = supabase.createClient(
+const supabase = supabase.createClient(
   'https://qwhqlwqdlatajzsjdzyu.supabase.co',
   'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY'
 );
 
 let user = null;
+let ymap = null;
 
-// LOGIN
-async function loginUser(){
-    const l = document.getElementById('login').value.trim();
-    const p = document.getElementById('pass').value.trim();
+// --- LOGIN ---
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const l = document.getElementById('login').value.trim();
+  const p = document.getElementById('password').value.trim();
+  if(!l||!p){ alert("Введите логин и пароль"); return; }
 
-    if(!l || !p){ alert("Введите логин и пароль"); return; }
+  const { data, error } = await supabase.from('employees')
+    .select('*').eq('login', l).eq('password', p).maybeSingle();
 
-    const { data, error } = await supabaseClient
-      .from('employees')
-      .select('*')
-      .eq('login', l)
-      .eq('password', p)
-      .maybeSingle();
+  if(error){ alert("Ошибка подключения"); console.log(error); return; }
+  if(!data){ alert("Неверный логин или пароль"); return; }
 
-    console.log("LOGIN:", data, error);
+  user = data;
+  document.getElementById('auth-screen').classList.add('hidden');
+  if(user.role==='admin'){
+    document.getElementById('admin-ui').classList.remove('hidden');
+    loadAdminData();
+  } else {
+    document.getElementById('courier-ui').classList.remove('hidden');
+    loadCourierData();
+  }
+});
 
-    if(error){ alert("Ошибка подключения"); return; }
-    if(!data){ alert("Неверный логин или пароль"); return; }
+// --- ADMIN DATA ---
+async function loadAdminData(){
+  const [orders, staff, shifts] = await Promise.all([
+    supabase.from('deliveries').select('*').order('delivery_date',{ascending:false}),
+    supabase.from('employees').select('*').eq('role','courier'),
+    supabase.from('shifts').select('*').order('shift_date',{ascending:true})
+  ]);
 
-    user = data;
-    document.getElementById('auth').classList.add('hidden');
+  const staffList = staff.data||[];
+  document.getElementById('courier').innerHTML = `<option value="">-- Назначить курьера --</option>` + 
+    staffList.map(s=>`<option value="${s.id}">${s.full_name}</option>`).join('');
 
-    if(user.role === 'admin'){
-        document.getElementById('admin-ui').classList.remove('hidden');
-        loadAdmin();
-    } else {
-        document.getElementById('courier-ui').classList.remove('hidden');
-        loadCourier();
-    }
+  const ordersDiv = document.getElementById('orders-list');
+  ordersDiv.innerHTML = (orders.data||[]).map(o=>`
+    <div class="card">
+      <b>${o.address}</b><br>${o.delivery_date} ${o.delivery_time}<br>
+      Клиент: ${o.client_name} (${o.client_phone})<br>
+      Комментарий: ${o.comment || 'Нет'}<br>
+      Курьер: ${staffList.find(s=>s.id===o.courier_id)?.full_name || 'Не назначен'}<br>
+      <button onclick="openMap('${o.address}')" class="btn mt-2">Показать на карте</button>
+      <button onclick="deleteOrder(${o.id})" class="btn mt-2 bg-red-500">Удалить заказ</button>
+      <select onchange="reassignCourier(${o.id}, this.value)" class="input mt-2">
+        <option value="">-- Курьер --</option>
+        ${staffList.map(s=>`<option value="${s.id}" ${o.courier_id===s.id?'selected':''}>${s.full_name}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+
+  // Смены
+  const grouped = (shifts.data||[]).reduce((acc,s)=>{
+    if(!acc[s.shift_date]) acc[s.shift_date]=[];
+    acc[s.shift_date].push(s.employee_id);
+    return acc;
+  }, {});
+  const grid = document.getElementById('monitoring-grid');
+  grid.innerHTML = Object.keys(grouped).sort().map(d=>`<div class="card">${d}: ${grouped[d].length} сотрудников</div>`).join('');
 }
 
-// ADMIN LOAD
-async function loadAdmin(){
-    const { data: orders } = await supabaseClient.from('deliveries').select('*').order('delivery_date', {ascending:false});
-    const { data: staff } = await supabaseClient.from('employees').select('*').eq('role','courier');
-
-    courier.innerHTML = '<option value="">Без курьера</option>' +
-        staff.map(s=>`<option value="${s.id}">${s.full_name}</option>`).join('');
-
-    ordersDiv = document.getElementById('orders');
-    ordersDiv.innerHTML = (orders||[]).map(o=>`
-        <div class="card">
-            <b>${o.address}</b><br>${o.delivery_date} ${o.delivery_time}<br>
-            <div class="flex gap-2 mt-2">
-                <button onclick="openMap('${o.address}')">📍</button>
-                <button onclick="deleteOrder('${o.id}')">❌</button>
-            </div>
-        </div>
-    `).join('');
-
-    // смены
-    const { data: shifts } = await supabaseClient.from('shifts').select('*');
-    document.getElementById('shift-monitor').innerHTML = shifts.map(s=>`<div>${s.shift_date}</div>`).join('');
-}
-
-// SAVE ORDER
+// --- SAVE ORDER ---
 async function saveOrder(){
-    const data = {
-        address: addr.value.trim(),
-        client_name: name.value.trim(),
-        client_phone: phone.value.trim(),
-        delivery_date: date.value,
-        delivery_time: time.value,
-        comment: comm.value,
-        courier_id: courier.value || null
-    };
-    if(!data.address || !data.delivery_date || !data.delivery_time){ alert("Заполни обязательные поля"); return; }
+  const data = {
+    address: addr.value.trim(),
+    client_name: clientName.value.trim(),
+    client_phone: clientPhone.value.trim(),
+    delivery_date: date.value,
+    delivery_time: time.value,
+    comment: comment.value,
+    courier_id: courier.value || null
+  };
+  if(!data.address||!data.delivery_date||!data.delivery_time){ alert("Заполните обязательные поля"); return; }
 
-    const { error } = await supabaseClient.from('deliveries').insert([data]);
-    if(error){ alert(error.message); return; }
+  const { error } = await supabase.from('deliveries').insert([data]);
+  if(error){ alert(error.message); return; }
 
-    addr.value=''; name.value=''; phone.value=''; date.value=''; time.value=''; comm.value=''; courier.value='';
-    loadAdmin();
+  addr.value=''; clientName.value=''; clientPhone.value=''; date.value=''; time.value=''; comment.value=''; courier.value='';
+  loadAdminData();
 }
 
-// CREATE EMPLOYEE
-async function createEmployee(){
-    await supabaseClient.from('employees').insert([{
-        login: document.getElementById('e-login').value.trim(),
-        password: document.getElementById('e-pass').value.trim(),
-        full_name: document.getElementById('e-name').value.trim(),
-        role: document.getElementById('e-role').value
-    }]);
-    alert("Сотрудник добавлен");
+// --- DELETE ORDER ---
+async function deleteOrder(id){
+  if(!confirm("Удалить заказ?")) return;
+  await supabase.from('deliveries').delete().eq('id', id);
+  loadAdminData();
 }
 
-// COURIER LOAD
-async function loadCourier(){
-    const { data } = await supabaseClient.from('deliveries').select('*').eq('courier_id', user.id).order('delivery_date',{ascending:false});
-    document.getElementById('c-orders').innerHTML = (data||[]).map(o=>`
-        <div class="card">
-            <b>${o.address}</b><br>${o.delivery_date} ${o.delivery_time}<br>
-            <button onclick="openMap('${o.address}')">📍 карта</button>
-        </div>
-    `).join('');
-    renderShifts();
+// --- REASSIGN COURIER ---
+async function reassignCourier(orderId, courierId){
+  await supabase.from('deliveries').update({ courier_id: courierId || null }).eq('id', orderId);
+  loadAdminData();
 }
 
-// SHIFTS
-async function renderShifts(){
-    const { data } = await supabaseClient.from('shifts').select('*').eq('employee_id', user.id);
-    document.getElementById('my-shifts').innerHTML = (data||[]).map(s=>`
-        <div>${s.shift_date} <button onclick="delShift('${s.shift_date}')">❌</button></div>
-    `).join('');
+// --- COURIER DATA ---
+async function loadCourierData(){
+  const { data } = await supabase.from('deliveries').select('*').eq('courier_id', user.id).order('delivery_date',{ascending:false});
+  const ordersDiv = document.getElementById('courier-orders');
+  ordersDiv.innerHTML = (data||[]).map(o=>`
+    <div class="card">
+      <b>${o.address}</b><br>${o.delivery_date} ${o.delivery_time}<br>
+      Клиент: ${o.client_name} (${o.client_phone})<br>
+      Комментарий: ${o.comment || 'Нет'}<br>
+      <button onclick="openMap('${o.address}')" class="btn mt-2">Показать на карте</button>
+    </div>
+  `).join('');
+
+  renderCourierShifts();
+}
+
+// --- COURIER SHIFTS ---
+async function renderCourierShifts(){
+  const { data } = await supabase.from('shifts').select('*').eq('employee_id', user.id).order('shift_date',{ascending:true});
+  const div = document.getElementById('courier-shifts');
+  div.innerHTML = (data||[]).map(s=>`<div class="card">${s.shift_date} <button onclick="deleteShift('${s.shift_date}')" class="btn mt-1 bg-red-500">Отмена</button></div>`).join('');
 }
 
 async function addShift(){
-    if(!shift-date.value){ alert("Выберите дату"); return; }
-    await supabaseClient.from('shifts').insert([{ employee_id: user.id, shift_date: shift-date.value }]);
-    shift-date.value='';
-    renderShifts();
+  const dateVal = shiftDate.value;
+  if(!dateVal) return;
+  await supabase.from('shifts').insert([{employee_id: user.id, shift_date: dateVal}]);
+  renderCourierShifts();
 }
 
-async function delShift(d){
-    await supabaseClient.from('shifts').delete().eq('employee_id', user.id).eq('shift_date', d);
-    renderShifts();
+async function deleteShift(d){
+  await supabase.from('shifts').delete().eq('employee_id', user.id).eq('shift_date', d);
+  renderCourierShifts();
 }
 
-// DELETE ORDER
-async function deleteOrder(id){
-    await supabaseClient.from('deliveries').delete().eq('id', id);
-    loadAdmin();
-}
-
-// MAP
+// --- MAP ---
 function openMap(addr){
-    ymaps.ready(()=>{
-        const mapDiv = document.createElement('div');
-        mapDiv.style="position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999";
-        document.body.appendChild(mapDiv);
-
-        const map = new ymaps.Map(mapDiv,{center:[55.75,37.6], zoom:10});
-        ymaps.geocode(addr).then(res=>{
-            const obj=res.geoObjects.get(0);
-            if(!obj) return;
-            const coords = obj.geometry.getCoordinates();
-            map.setCenter(coords,15);
-            map.geoObjects.add(new ymaps.Placemark(coords));
-        });
+  document.getElementById('map-modal').classList.remove('hidden');
+  if(ymap) ymap.destroy();
+  ymaps.ready(()=> {
+    ymap = new ymaps.Map("yandex-map",{ center:[55.75,37.62], zoom:12 });
+    ymaps.geocode(addr).then(res=>{
+      const coords = res.geoObjects.get(0).geometry.getCoordinates();
+      ymap.setCenter(coords,15);
+      ymap.geoObjects.add(new ymaps.Placemark(coords, { balloonContent: addr }));
     });
+  });
 }
 </script>
 
