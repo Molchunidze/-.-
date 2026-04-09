@@ -3,78 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Теплосбережение | Профессиональная Логистика</title>
+    <title>Теплосбережение | CRM 2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=9b0b8d19-63e2-430d-946c-26070928d7a4&lang=ru_RU"></script>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background-color: #F8F9FB; color: #111827; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #F9FAFB; color: #111827; }
         .hidden { display: none !important; }
-        .ios-card { background: white; border-radius: 24px; border: 1px solid #E5E7EB; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .date-header { background: #F3F4F6; padding: 10px 24px; font-size: 11px; font-weight: 800; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
+        .ios-card { background: white; border-radius: 24px; border: 1px solid #E5E7EB; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .date-section-header { padding: 12px 24px; background: #F3F4F6; font-size: 10px; font-weight: 900; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.1em; display: flex; justify-content: space-between; }
         .calendar-grid { display: grid; grid-template-columns: 200px repeat(12, 1fr); min-width: 1100px; background: #E5E7EB; gap: 1px; }
         .calendar-header { background: #F9FAFB; padding: 12px; text-align: center; font-size: 10px; font-weight: 800; color: #9CA3AF; text-transform: uppercase; }
-        .calendar-cell { background: white; min-height: 80px; padding: 8px; }
-        .delivery-chip { background: #9ec827; color: white; font-size: 9px; font-weight: 800; padding: 4px 6px; border-radius: 6px; margin-bottom: 2px; }
-        .btn-delete { color: #EF4444; opacity: 0.3; transition: 0.2s; }
-        .btn-delete:hover { opacity: 1; transform: scale(1.1); }
+        .calendar-cell { background: white; min-height: 70px; padding: 8px; border-top: 1px solid #F3F4F6; }
+        .delivery-chip { background: #9ec827; color: white; font-size: 9px; font-weight: 800; padding: 4px; border-radius: 6px; margin-bottom: 2px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen" class="fixed inset-0 z-[500] bg-white flex flex-col items-center justify-center p-6 text-center">
+    <div id="auth-screen" class="fixed inset-0 z-[500] bg-white flex flex-col items-center justify-center p-6">
         <div class="w-20 h-20 bg-[#9ec827] rounded-[24px] mb-8 flex items-center justify-center text-white text-4xl font-black shadow-xl">Т</div>
-        <div class="w-full max-w-sm space-y-4">
-            <input id="u-login" type="text" placeholder="Логин" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all font-medium">
-            <input id="u-pass" type="password" placeholder="Пароль" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all font-medium">
-            <button onclick="globalLogin()" class="w-full py-5 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">ВОЙТИ В СИСТЕМУ</button>
-            <p id="auth-err" class="text-red-500 text-xs font-bold hidden">Неверные данные доступа</p>
+        <div class="w-full max-w-sm space-y-4 text-center">
+            <h1 class="text-xl font-black uppercase tracking-widest mb-6">Теплосбережение</h1>
+            <input id="u-login" type="text" placeholder="Логин" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all">
+            <input id="u-pass" type="password" placeholder="Пароль" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all">
+            <button onclick="globalLogin()" class="w-full py-5 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">ВОЙТИ</button>
+            <p id="auth-err" class="text-red-500 text-xs font-bold hidden">Ошибка доступа. Проверьте логин и пароль.</p>
         </div>
     </div>
 
     <div id="manager-ui" class="hidden h-screen flex overflow-hidden">
         <aside class="w-72 bg-white border-r border-gray-100 p-8 flex flex-col">
-            <div class="text-[10px] font-black text-[#9ec827] mb-12 uppercase tracking-widest">Control Center</div>
+            <div class="text-[10px] font-black text-[#9ec827] mb-12 uppercase tracking-widest">Control Panel</div>
             <nav class="space-y-2 flex-1">
-                <button onclick="switchDesk('orders')" id="nav-orders" class="w-full text-left p-4 rounded-2xl font-bold text-sm bg-gray-50 text-gray-900 shadow-sm transition-all">📦 Все доставки</button>
-                <button onclick="switchDesk('cal')" id="nav-cal" class="w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50 transition-all">📅 Мониторинг</button>
-                <button onclick="switchDesk('staff')" id="nav-staff" class="w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50 transition-all">👥 Сотрудники</button>
+                <button onclick="switchDesk('orders')" id="nav-orders" class="w-full text-left p-4 rounded-2xl font-bold text-sm bg-gray-50 text-gray-900 shadow-sm">📦 Доставки</button>
+                <button onclick="switchDesk('cal')" id="nav-cal" class="w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50">📅 Мониторинг</button>
+                <button onclick="switchDesk('staff')" id="nav-staff" class="w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50">👥 Команда</button>
             </nav>
-            <button onclick="location.reload()" class="text-xs font-bold text-gray-300 hover:text-red-400 transition-colors">Выйти из сессии</button>
+            <button onclick="location.reload()" class="text-xs font-bold text-gray-300 hover:text-red-400">Выход</button>
         </aside>
 
         <main class="flex-1 overflow-auto bg-[#F9FAFB] p-12">
             <div id="desk-orders">
                 <div class="flex justify-between items-end mb-10">
-                    <div>
-                        <h1 class="text-4xl font-black tracking-tight">График заказов</h1>
-                        <p class="text-gray-400 font-medium text-sm mt-2">Распределение по датам и времени</p>
-                    </div>
-                    <button onclick="openOrderModal()" class="bg-[#9ec827] text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:brightness-105 active:scale-95 transition">+ Новый заказ</button>
+                    <div><h1 class="text-4xl font-black tracking-tight">График заказов</h1></div>
+                    <button onclick="openOrderModal()" class="bg-[#9ec827] text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:scale-105 active:scale-95 transition">+ Новый заказ</button>
                 </div>
-                
-                <div id="orders-container" class="space-y-8">
+                <div id="orders-grouped-container" class="space-y-10">
                     </div>
             </div>
 
             <div id="desk-staff" class="hidden">
                 <div class="flex justify-between items-center mb-10">
-                    <h1 class="text-4xl font-black">Команда</h1>
+                    <h1 class="text-4xl font-black">Сотрудники</h1>
                     <button onclick="addEmployee()" class="bg-black text-white px-8 py-4 rounded-2xl font-bold shadow-lg hover:scale-105 transition">+ Добавить</button>
                 </div>
-                <div class="grid grid-cols-3 gap-6" id="staff-list"></div>
+                <div class="grid grid-cols-3 gap-6" id="staff-render-list"></div>
             </div>
 
             <div id="desk-cal" class="hidden">
-                <h1 class="text-4xl font-black mb-10">Загрузка штата</h1>
-                <div class="ios-card overflow-x-auto"><div class="calendar-grid" id="calendar-render"></div></div>
+                <h1 class="text-4xl font-black mb-10">Загрузка ресурсов</h1>
+                <div class="ios-card overflow-x-auto"><div class="calendar-grid" id="calendar-render-area"></div></div>
             </div>
         </main>
     </div>
 
     <div id="courier-ui" class="hidden min-h-screen bg-[#F2F2F7] pb-20">
-        <header class="p-8 pt-16 bg-white border-b"><h1 id="courier-name-display" class="text-4xl font-black tracking-tighter">Мои заказы</h1></header>
-        <div id="courier-orders" class="p-4 space-y-4"></div>
+        <header class="p-8 pt-16 bg-white border-b flex justify-between items-end">
+            <div><p class="text-[10px] font-black text-[#9ec827] uppercase mb-1">Ваши задачи</p><h1 id="c-name" class="text-3xl font-black tracking-tighter text-gray-900">Загрузка...</h1></div>
+            <button onclick="location.reload()" class="text-red-400 font-bold text-sm mb-1">Выйти</button>
+        </header>
+        <div id="courier-orders-list" class="p-4 space-y-4"></div>
     </div>
 
     <script>
@@ -83,10 +81,12 @@
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
         let currentUser = null;
 
+        // --- ЛОГИКА АВТОРИЗАЦИИ ---
         async function globalLogin() {
-            const l = document.getElementById('u-login').value;
-            const p = document.getElementById('u-pass').value;
-            const { data } = await supabaseClient.from('employees').select('*').eq('login', l).eq('password', p).single();
+            const login = document.getElementById('u-login').value.trim();
+            const pass = document.getElementById('u-pass').value.trim();
+            
+            const { data, error } = await supabaseClient.from('employees').select('*').eq('login', login).eq('password', pass).single();
 
             if (data) {
                 currentUser = data;
@@ -96,161 +96,151 @@
                     loadManagerData();
                 } else {
                     document.getElementById('courier-ui').classList.remove('hidden');
-                    document.getElementById('courier-name-display').innerText = data.full_name;
-                    loadCourierOrders();
+                    document.getElementById('c-name').innerText = data.full_name;
+                    loadCourierData();
                 }
             } else {
                 document.getElementById('auth-err').classList.remove('hidden');
             }
         }
 
+        // --- ЛОГИКА МЕНЕДЖЕРА ---
         async function loadManagerData() {
-            const { data: deliveries } = await supabaseClient.from('deliveries').select('*, employees(full_name)').order('delivery_date', { ascending: true }).order('delivery_time', { ascending: true });
-            
-            const container = document.getElementById('orders-container');
+            // Запрашиваем заказы со связью к сотрудникам
+            const { data: deliveries, error } = await supabaseClient
+                .from('deliveries')
+                .select('*, employees(full_name)')
+                .order('delivery_date', { ascending: true })
+                .order('delivery_time', { ascending: true });
+
+            const container = document.getElementById('orders-grouped-container');
             container.innerHTML = '';
 
-            // Группировка данных по дате
-            const grouped = deliveries.reduce((acc, obj) => {
-                const date = obj.delivery_date || 'Без даты';
-                if (!acc[date]) acc[date] = [];
-                acc[date].push(obj);
-                return acc;
-            }, {});
+            if (!deliveries || deliveries.length === 0) {
+                container.innerHTML = '<div class="text-center py-20 text-gray-300 font-bold">Нет активных заказов</div>';
+            } else {
+                // Группировка
+                const grouped = deliveries.reduce((acc, obj) => {
+                    const d = obj.delivery_date || 'Без даты';
+                    if (!acc[d]) acc[d] = [];
+                    acc[d].push(obj);
+                    return acc;
+                }, {});
 
-            for (const date in grouped) {
-                const dayOrders = grouped[date];
-                let dateHtml = `
-                    <div class="ios-card">
-                        <div class="date-header">
-                            <span>${date}</span>
-                            <span>${dayOrders.length} ЗАКАЗ(ОВ)</span>
-                        </div>
-                        <table class="w-full text-left">
-                            <tbody class="divide-y divide-gray-50">
-                `;
-
-                dayOrders.forEach(d => {
-                    dateHtml += `
-                        <tr class="hover:bg-gray-50/50 transition font-medium">
-                            <td class="p-6 w-32 font-black text-gray-900 text-lg">${d.delivery_time || '--:--'}</td>
-                            <td class="p-6">
-                                <div class="text-sm font-bold text-gray-800">${d.address}</div>
-                                <div class="text-[10px] text-gray-400 mt-1 uppercase font-black tracking-widest">${d.client_name || 'Клиент'}</div>
-                            </td>
-                            <td class="p-6">
-                                <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">
-                                    ${d.employees?.full_name || 'Не назначен'}
-                                </span>
-                            </td>
-                            <td class="p-6 text-right">
-                                <button onclick="deleteOrder('${d.id}')" class="btn-delete p-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                dateHtml += `</tbody></table></div>`;
-                container.innerHTML += dateHtml;
+                for (const date in grouped) {
+                    let groupHtml = `
+                        <div class="ios-card">
+                            <div class="date-section-header"><span>${date}</span><span>${grouped[date].length} ПОЗИЦИИ</span></div>
+                            <table class="w-full text-left"><tbody class="divide-y divide-gray-50">`;
+                    
+                    grouped[date].forEach(item => {
+                        groupHtml += `
+                            <tr class="hover:bg-gray-50/50 transition font-medium">
+                                <td class="p-6 w-32 font-black text-gray-900 text-lg">${item.delivery_time || '--:--'}</td>
+                                <td class="p-6">
+                                    <div class="text-sm font-bold text-gray-800">${item.address}</div>
+                                    <div class="text-[10px] text-gray-400 mt-1 uppercase font-black">${item.client_name || 'Клиент'}</div>
+                                </td>
+                                <td class="p-6">
+                                    <span class="bg-blue-50 text-blue-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">
+                                        ${item.employees?.full_name || 'Не назначен'}
+                                    </span>
+                                </td>
+                                <td class="p-6 text-right">
+                                    <button onclick="deleteOrder('${item.id}')" class="text-red-300 hover:text-red-500 transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>`;
+                    });
+                    groupHtml += `</tbody></table></div>`;
+                    container.innerHTML += groupHtml;
+                }
             }
-
             loadEmployees();
-            renderCalendar(deliveries);
+            renderMonitoring(deliveries);
         }
 
         async function deleteOrder(id) {
-            if (confirm("Удалить этот заказ навсегда?")) {
+            if (confirm("Удалить заказ?")) {
                 await supabaseClient.from('deliveries').delete().eq('id', id);
                 loadManagerData();
             }
         }
 
-        async function addEmployee() {
-            const name = prompt("ФИО сотрудника:");
-            const login = prompt("Логин:");
-            const pass = prompt("Пароль:");
-            if (name && login && pass) {
-                await supabaseClient.from('employees').insert([{ full_name: name, login: login, password: pass, role: 'courier' }]);
-                loadEmployees();
-            }
-        }
-
-        async function loadEmployees() {
-            const { data } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
-            document.getElementById('staff-list').innerHTML = data.map(e => `
-                <div class="ios-card p-6 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-black text-gray-400">${e.full_name[0]}</div>
-                    <div>
-                        <h3 class="font-black text-gray-800 text-sm">${e.full_name}</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">${e.login}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
         async function openOrderModal() {
-            const { data: couriers } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
-            const addr = prompt("Адрес:");
-            const date = prompt("Дата (гггг-мм-дд):", new Date().toISOString().split('T')[0]);
-            const time = prompt("Время (чч:мм):");
+            const { data: staff } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
+            const addr = prompt("Адрес доставки:");
+            const date = prompt("Дата (ГГГГ-ММ-ДД):", new Date().toISOString().split('T')[0]);
+            const time = prompt("Время (ЧЧ:ММ):");
             
-            let courierList = couriers.map((c, i) => `${i+1}. ${c.full_name}`).join('\n');
-            const courierIdx = prompt(`Выберите курьера:\n${courierList}`);
-            const courier = couriers[parseInt(courierIdx) - 1];
+            let courierSelect = staff.map((s, i) => `${i+1}. ${s.full_name}`).join('\n');
+            const cIdx = prompt(`Выберите курьера:\n${courierSelect}`);
+            const courier = staff[parseInt(cIdx) - 1];
 
             if (addr && courier && time) {
                 await supabaseClient.from('deliveries').insert([{ 
                     address: addr, 
                     courier_id: courier.id, 
-                    delivery_time: time,
+                    delivery_time: time, 
                     delivery_date: date,
-                    client_name: 'Оборудование Теплосбережение'
+                    client_name: 'ООО Теплосбережение'
                 }]);
                 loadManagerData();
             }
         }
 
-        async function renderCalendar(deliveries) {
-            const { data: staff } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
-            const render = document.getElementById('calendar-render');
-            let html = `<div class="calendar-header">Сотрудник</div>` + [...Array(12)].map((_,i) => `<div class="calendar-header border-l">${i+9}:00</div>`).join('');
-            
-            staff.forEach(s => {
-                html += `<div class="calendar-cell font-bold text-xs flex items-center border-t border-r">${s.full_name}</div>`;
-                for(let h=9; h<=20; h++) {
-                    const dInHour = deliveries.filter(d => parseInt(d.delivery_time) === h && d.courier_id === s.id);
-                    html += `<div class="calendar-cell border-t border-l">${dInHour.map(d => `<div class="delivery-chip">${d.delivery_time}</div>`).join('')}</div>`;
-                }
-            });
-            render.innerHTML = html;
-        }
-
-        async function loadCourierOrders() {
-            const { data } = await supabaseClient.from('deliveries').select('*').eq('courier_id', currentUser.id).order('delivery_time', { ascending: true });
-            document.getElementById('courier-orders').innerHTML = data.map(d => `
-                <div class="ios-card p-8">
-                    <div class="flex justify-between items-start mb-6">
-                        <span class="text-xs font-black bg-gray-100 px-3 py-1 rounded-full text-gray-500 uppercase">${d.delivery_date}</span>
-                        <span class="text-3xl font-black text-[#9ec827]">${d.delivery_time}</span>
-                    </div>
-                    <h2 class="text-3xl font-black tracking-tighter mb-8 leading-tight text-gray-800">${d.address}</h2>
-                    <button class="w-full py-5 bg-[#9ec827] text-white font-black rounded-3xl shadow-lg uppercase tracking-widest text-xs">Доставлено</button>
+        async function loadEmployees() {
+            const { data } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
+            document.getElementById('staff-render-list').innerHTML = data.map(e => `
+                <div class="ios-card p-6 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xl font-black text-gray-400">${e.full_name[0]}</div>
+                    <div><h3 class="font-black text-gray-800 text-sm">${e.full_name}</h3><p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">${e.login}</p></div>
                 </div>
             `).join('');
         }
 
+        async function renderMonitoring(deliveries) {
+            const { data: staff } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
+            const area = document.getElementById('calendar-render-area');
+            let html = `<div class="calendar-header">Курьер</div>` + [...Array(12)].map((_,i) => `<div class="calendar-header border-l">${i+9}:00</div>`).join('');
+            
+            staff.forEach(s => {
+                html += `<div class="calendar-cell font-bold text-xs flex items-center border-t border-r">${s.full_name}</div>`;
+                for(let h=9; h<=20; h++) {
+                    const count = deliveries?.filter(d => parseInt(d.delivery_time) === h && d.courier_id === s.id).length || 0;
+                    html += `<div class="calendar-cell border-t border-l">${count > 0 ? `<div class="delivery-chip">📦 ${count} зак.</div>` : ''}</div>`;
+                }
+            });
+            area.innerHTML = html;
+        }
+
+        // --- ЛОГИКА КУРЬЕРА ---
+        async function loadCourierData() {
+            const { data } = await supabaseClient.from('deliveries').select('*').eq('courier_id', currentUser.id).order('delivery_time', { ascending: true });
+            const list = document.getElementById('courier-orders-list');
+            list.innerHTML = data.length > 0 ? data.map(d => `
+                <div class="ios-card p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="text-[10px] font-black bg-gray-100 px-3 py-1 rounded-full text-gray-500 uppercase">${d.delivery_date}</span>
+                        <span class="text-3xl font-black text-[#9ec827]">${d.delivery_time}</span>
+                    </div>
+                    <h2 class="text-3xl font-black tracking-tighter mb-8 text-gray-800 leading-tight">${d.address}</h2>
+                    <button class="w-full py-5 bg-[#9ec827] text-white font-black rounded-3xl shadow-lg uppercase tracking-widest text-xs active:scale-95 transition">Завершить доставку</button>
+                </div>
+            `).join('') : '<p class="text-center py-20 text-gray-400 font-bold">У вас нет назначенных заказов</p>';
+        }
+
+        // Переключение вкладок
         function switchDesk(tab) {
             document.getElementById('desk-orders').classList.toggle('hidden', tab !== 'orders');
             document.getElementById('desk-staff').classList.toggle('hidden', tab !== 'staff');
             document.getElementById('desk-cal').classList.toggle('hidden', tab !== 'cal');
             
-            // UI Toggle
             ['orders', 'cal', 'staff'].forEach(t => {
                 document.getElementById(`nav-${t}`).className = t === tab ? 
-                "w-full text-left p-4 rounded-2xl font-bold text-sm bg-gray-50 text-gray-900 shadow-sm transition-all" : 
-                "w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50 transition-all";
+                "w-full text-left p-4 rounded-2xl font-bold text-sm bg-white text-gray-900 shadow-sm" : 
+                "w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/50 transition";
             });
         }
     </script>
