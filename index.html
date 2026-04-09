@@ -65,9 +65,9 @@
     </div>
 
     <script>
-        const SB_URL = 'ВАШ_URL';
-        const SB_KEY = 'ВАШ_KEY';
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+       const SUPABASE_URL = 'https://qwhqlwqdlatajzsjdzyu.supabase.co;
+        const SUPABASE_KEY = 'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         function login() {
             if(document.getElementById('login').value === 'курьер' && document.getElementById('pass').value === '123') {
