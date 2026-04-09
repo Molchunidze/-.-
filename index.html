@@ -3,138 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Теплосбережение Доставка</title>
+    <title>Теплосбережение | Система управления</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=9b0b8d19-63e2-430d-946c-26070928d7a4&lang=ru_RU"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #F2F2F7; -webkit-tap-highlight-color: transparent; }
-        .ios-blur { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: #F2F2F7; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none !important; }
+        .ios-blur { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .ios-card { background: white; border-radius: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
         .tab-active { color: #9ec827; }
-        .ios-card { background: white; border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        /* Стили для плиток-часов */
-        .hour-chip { transition: all 0.2s ease; border: 1px solid #f3f4f6; }
-        input:checked + .hour-chip { background-color: #9ec827; border-color: #9ec827; color: white; box-shadow: 0 4px 12px rgba(158, 200, 39, 0.3); }
+        .hour-chip { transition: all 0.2s; border: 1px solid #f3f4f6; cursor: pointer; }
+        input:checked + .hour-chip { background: #9ec827; color: white; border-color: #9ec827; box-shadow: 0 4px 12px rgba(158,200,39,0.3); }
+        .grid-hours { display: grid; grid-template-columns: 140px repeat(12, 1fr); gap: 8px; min-width: 900px; }
+        .metro-badge { background: #f0f0f0; color: #666; font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 800; text-transform: uppercase; }
     </style>
 </head>
-<body class="pb-24">
+<body>
 
-    <div id="auth-screen" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center px-10 text-center">
-        <div class="w-20 h-20 bg-[#9ec827] rounded-2xl mb-6 flex items-center justify-center text-white text-4xl font-bold shadow-xl">Т</div>
-        <h1 class="text-2xl font-black mb-8 uppercase tracking-tighter text-gray-800">Теплосбережение</h1>
-        <div class="w-full space-y-3">
-            <input id="login-field" type="text" placeholder="Логин" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 ring-[#9ec827]">
-            <input id="pass-field" type="password" placeholder="Пароль" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 ring-[#9ec827]">
-            <button onclick="handleLogin()" class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-xl shadow-lg active:scale-95 transition">ВОЙТИ</button>
+    <div id="auth-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8">
+        <div class="w-20 h-20 bg-[#9ec827] rounded-[22px] mb-8 flex items-center justify-center text-white text-4xl font-black shadow-xl">Т</div>
+        <h1 class="text-2xl font-black uppercase tracking-tighter mb-8 text-gray-800">Теплосбережение</h1>
+        <div class="w-full max-w-sm space-y-3">
+            <input id="u-login" type="text" placeholder="Логин" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all">
+            <input id="u-pass" type="password" placeholder="Пароль" class="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all">
+            <button onclick="globalLogin()" class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">ВОЙТИ</button>
+            <p id="login-err" class="text-red-500 text-[10px] font-black text-center hidden uppercase tracking-widest mt-2">Ошибка доступа</p>
         </div>
     </div>
 
-    <div id="app-content" class="hidden">
-        <header class="ios-blur sticky top-0 z-50 px-5 pt-12 pb-4 border-b border-gray-200 flex justify-between items-end">
-            <div>
-                <p id="date-now" class="text-[12px] font-bold text-gray-400 uppercase tracking-tight"></p>
-                <h1 id="header-title" class="text-3xl font-extrabold tracking-tight text-black">Доставки</h1>
-            </div>
+    <div id="courier-ui" class="hidden pb-24 min-h-screen">
+        <header class="ios-blur sticky top-0 z-50 px-6 pt-12 pb-4 border-b border-gray-100 flex justify-between items-end">
+            <h1 id="mob-title" class="text-3xl font-black tracking-tight">Доставки</h1>
             <button onclick="location.reload()" class="text-red-500 font-bold text-sm mb-1">Выход</button>
         </header>
 
-        <main id="view-orders" class="p-4 space-y-4">
-            <div id="orders-container" class="space-y-4">
-                <p class="text-center text-gray-400 py-10">Загрузка...</p>
-            </div>
+        <main id="mob-orders" class="p-4 space-y-4">
+            <div id="orders-list" class="space-y-4"></div>
         </main>
 
-        <main id="view-shifts" class="hidden p-4">
+        <main id="mob-shifts" class="hidden p-4">
             <div class="ios-card p-6">
-                <h3 class="font-bold text-lg mb-4 text-gray-800">Выбор времени</h3>
-                <input type="date" id="shift-date" class="w-full p-4 bg-gray-50 rounded-xl mb-6 outline-none border border-gray-100 font-semibold">
-                
-                <div class="grid grid-cols-3 gap-3" id="hours-grid"></div>
-                
-                <button onclick="saveHours()" class="w-full mt-8 py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-                    СОХРАНИТЬ ЧАСЫ
-                </button>
+                <h3 class="font-black text-gray-800 mb-2 uppercase text-xs tracking-widest">Рабочие часы</h3>
+                <input type="date" class="w-full p-4 bg-gray-50 rounded-xl mb-6 border-none font-bold text-gray-700">
+                <div class="grid grid-cols-3 gap-2" id="mob-hours-grid"></div>
+                <button onclick="alert('Часы сохранены')" class="w-full mt-8 py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">СОХРАНИТЬ</button>
             </div>
         </main>
 
-        <nav class="ios-blur fixed bottom-0 left-0 right-0 h-20 border-t border-gray-200 flex justify-around items-start pt-2">
-            <button onclick="showTab('orders', 'Доставки', this)" class="flex flex-col items-center gap-1 tab-active">
+        <nav class="ios-blur fixed bottom-0 inset-x-0 h-20 border-t border-gray-100 flex justify-around pt-2">
+            <button onclick="switchMob('orders', this)" class="tab-active flex flex-col items-center">
                 <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                <span class="text-[10px] font-bold uppercase">Заказы</span>
             </button>
-            <button onclick="showTab('shifts', 'Мои часы', this)" class="flex flex-col items-center gap-1 text-gray-400">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span class="text-[10px] font-bold uppercase">Смены</span>
+            <button onclick="switchMob('shifts', this)" class="text-gray-400 flex flex-col items-center">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </button>
         </nav>
+    </div>
+
+    <div id="manager-ui" class="hidden h-screen flex overflow-hidden">
+        <aside class="w-64 bg-gray-50 border-r border-gray-100 p-8 flex flex-col">
+            <div class="mb-12 font-black text-[#9ec827] tracking-tighter">ТЕПЛОСБЕРЕЖЕНИЕ</div>
+            <nav class="space-y-2 flex-1">
+                <button id="desk-btn-orders" onclick="switchDesk('orders')" class="w-full text-left p-4 rounded-2xl bg-white shadow-sm font-bold text-sm">📦 Заказы</button>
+                <button id="desk-btn-cal" onclick="switchDesk('cal')" class="w-full text-left p-4 rounded-2xl text-gray-400 font-bold text-sm hover:bg-white/50 transition">📅 Мониторинг</button>
+            </nav>
+            <button onclick="location.reload()" class="p-4 text-red-400 font-bold text-xs uppercase text-left hover:text-red-600">Выход</button>
+        </aside>
+
+        <main class="flex-1 overflow-auto bg-white">
+            <div id="desk-orders" class="p-12">
+                <div class="flex justify-between items-center mb-10">
+                    <h2 class="text-4xl font-black tracking-tighter">Доставки</h2>
+                    <button onclick="createNew()" class="bg-[#9ec827] text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:brightness-110 active:scale-95 transition">+ Новый заказ</button>
+                </div>
+                <div class="ios-card border border-gray-100">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <tr><th class="p-6">Метро</th><th class="p-6">Адрес</th><th class="p-6">Клиент / Телефон</th><th class="p-6 text-right">Статус</th></tr>
+                        </thead>
+                        <tbody id="desk-data" class="divide-y divide-gray-50 text-sm font-medium"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="desk-cal" class="hidden p-12">
+                <h2 class="text-4xl font-black tracking-tighter mb-10">Загрузка курьеров</h2>
+                <div class="ios-card p-8 overflow-x-auto border border-gray-50">
+                    <div class="grid-hours text-[10px] font-black text-gray-300 uppercase mb-8">
+                        <div>Сотрудник</div>
+                        ${[9,10,11,12,13,14,15,16,17,18,19,20].map(h => `<div class="text-center">${h}:00</div>`).join('')}
+                    </div>
+                    <div id="cal-rows">
+                        <div class="grid-hours py-4 border-b border-gray-50 items-center">
+                            <div class="font-bold text-xs text-gray-700">Алексей Кузнецов</div>
+                            ${Array(12).fill(0).map((_,i) => `<div class="flex justify-center"><div class="w-6 h-6 ${[0,1,2,5,6].includes(i)?'bg-[#9ec827]':'bg-gray-100'} rounded-lg"></div></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
         const SB_URL = 'https://qwhqlwqdlatajzsjdzyu.supabase.co';
         const SB_KEY = 'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY';
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-
         const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
 
-        function handleLogin() {
-            const l = document.getElementById('login-field').value.trim().toLowerCase();
-            const p = document.getElementById('pass-field').value.trim();
-            if(l === 'курьер' && p === '123') {
+        // Геокодирование метро
+        async function getMetro(address) {
+            try {
+                const res = await ymaps.geocode(address, { kind: 'metro', results: 1 });
+                const obj = res.geoObjects.get(0);
+                return obj ? obj.getName().replace('метро ', '') : '—';
+            } catch (e) { return '—'; }
+        }
+
+        function globalLogin() {
+            const l = document.getElementById('u-login').value.trim().toLowerCase();
+            const p = document.getElementById('u-pass').value.trim();
+            const err = document.getElementById('login-err');
+
+            if (l === 'admin' && p === 'admin') {
                 document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-content').classList.remove('hidden');
-                initHours();
-                loadOrders();
-            } else { alert('Ошибка входа'); }
+                document.getElementById('manager-ui').classList.remove('hidden');
+                loadManagerData();
+            } else if (l === 'курьер' && p === '123') {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('courier-ui').classList.remove('hidden');
+                initMobHours();
+                loadCourierOrders();
+            } else { err.classList.remove('hidden'); }
         }
 
-        function initHours() {
-            document.getElementById('hours-grid').innerHTML = hours.map(h => `
-                <label class="cursor-pointer">
-                    <input type="checkbox" value="${h}" class="hidden peer">
-                    <div class="hour-chip p-3 text-center rounded-xl bg-gray-50 text-sm font-bold text-gray-500 peer-checked:bg-[#9ec827] peer-checked:text-white">${h}</div>
-                </label>
-            `).join('');
-        }
-
-        function showTab(id, title, btn) {
-            document.getElementById('view-orders').classList.toggle('hidden', id !== 'orders');
-            document.getElementById('view-shifts').classList.toggle('hidden', id !== 'shifts');
-            document.getElementById('header-title').innerText = title;
-            document.querySelectorAll('nav button').forEach(b => b.classList.replace('tab-active', 'text-gray-400'));
-            btn.classList.add('tab-active');
-            btn.classList.remove('text-gray-400');
-        }
-
-        async function loadOrders() {
+        // ЛОГИКА КУРЬЕРА
+        async function loadCourierOrders() {
             const { data } = await supabaseClient.from('deliveries').select('*');
-            const container = document.getElementById('orders-container');
-            if(!data || data.length === 0) { container.innerHTML = "<p class='text-center text-gray-400 py-10'>Заказов нет</p>"; return; }
-
-            container.innerHTML = data.map(item => `
-                <div class="ios-card p-4">
-                    <div class="flex justify-between mb-2"><span class="text-[10px] font-black text-[#9ec827] uppercase italic">ID ${item.id}</span></div>
-                    <h2 class="text-xl font-bold mb-1 text-gray-800">${item.address}</h2>
-                    <p class="text-sm text-gray-500 mb-4">${item.client_name} • ${item.items}</p>
-                    <div id="map-${item.id}" class="w-full h-40 bg-gray-100 rounded-2xl mb-4 overflow-hidden shadow-inner"></div>
-                    <button onclick="alert('Доставка подтверждена')" class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">ДОСТАВЛЕНО</button>
-                </div>
-            `).join('');
-
-            data.forEach(item => {
+            const list = document.getElementById('orders-list');
+            list.innerHTML = '';
+            
+            for (const item of (data || [])) {
+                const m = await getMetro(item.address);
+                list.innerHTML += `
+                    <div class="ios-card p-6">
+                        <div class="flex justify-between items-center mb-3">
+                             <span class="metro-badge">Ⓜ ${m}</span>
+                             <span class="text-[10px] font-black text-gray-300 italic uppercase">ID ${item.id}</span>
+                        </div>
+                        <h2 class="text-2xl font-black mb-1 text-gray-800 tracking-tight">${item.address}</h2>
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <p class="text-sm font-bold text-gray-400 uppercase tracking-widest">${item.client_name}</p>
+                                <a href="tel:${item.phone}" class="text-[#9ec827] font-black text-sm tracking-tighter hover:underline">${item.phone || ''}</a>
+                            </div>
+                            <a href="tel:${item.phone}" class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-[#9ec827] shadow-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                            </a>
+                        </div>
+                        <div id="map-${item.id}" class="w-full h-44 bg-gray-100 rounded-3xl mb-4 shadow-inner"></div>
+                        <button class="w-full py-5 bg-[#9ec827] text-white font-black rounded-2xl shadow-lg active:scale-95 transition">ДОСТАВЛЕНО</button>
+                    </div>`;
+                
                 ymaps.ready(() => {
                     const map = new ymaps.Map(`map-${item.id}`, { center: [55.75, 37.61], zoom: 14, controls: [] });
-                    ymaps.geocode(item.address).then(res => {
-                        const coords = res.geoObjects.get(0).geometry.getCoordinates();
-                        map.setCenter(coords);
-                        map.geoObjects.add(new ymaps.Placemark(coords, {}, { preset: 'islands#greenDotIcon' }));
+                    ymaps.geocode(item.address).then(r => {
+                        const c = r.geoObjects.get(0).geometry.getCoordinates();
+                        map.setCenter(c);
+                        map.geoObjects.add(new ymaps.Placemark(c, {}, {preset: 'islands#greenDotIcon'}));
                     });
                 });
-            });
+            }
         }
 
-        function saveHours() { alert('Смена сохранена в базе данных'); }
-        document.getElementById('date-now').innerText = new Date().toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'});
+        function initMobHours() {
+            document.getElementById('mob-hours-grid').innerHTML = hours.map(h => `
+                <label><input type="checkbox" value="${h}" class="hidden peer">
+                <div class="hour-chip p-4 text-center rounded-2xl bg-gray-50 text-sm font-black text-gray-400 peer-checked:bg-[#9ec827] peer-checked:text-white">${h}</div></label>
+            `).join('');
+        }
+
+        // ЛОГИКА МЕНЕДЖЕРА
+        async function loadManagerData() {
+            const { data } = await supabaseClient.from('deliveries').select('*');
+            const tbody = document.getElementById('desk-data');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-400 font-bold italic">Обработка маршрутов...</td></tr>';
+            
+            let html = '';
+            for (const i of (data || [])) {
+                const metro = await getMetro(i.address);
+                html += `
+                    <tr class="hover:bg-gray-50/50 transition">
+                        <td class="p-6 font-black text-[#9ec827]">Ⓜ ${metro}</td>
+                        <td class="p-6 font-bold text-gray-700">${i.address}</td>
+                        <td class="p-6">
+                            <div class="font-black text-gray-800">${i.client_name}</div>
+                            <a href="tel:${i.phone}" class="text-blue-500 text-xs font-bold hover:underline">${i.phone || ''}</a>
+                        </td>
+                        <td class="p-6 text-right"><span class="bg-green-50 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase">В работе</span></td>
+                    </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function createNew() {
+            const a = prompt("Адрес доставки:");
+            const n = prompt("Имя клиента:");
+            const p = prompt("Номер телефона:");
+            if(a && n) {
+                await supabaseClient.from('deliveries').insert([{ address: a, client_name: n, phone: p }]);
+                loadManagerData();
+            }
+        }
+
+        function switchMob(tab, btn) {
+            document.getElementById('mob-orders').classList.toggle('hidden', tab !== 'orders');
+            document.getElementById('mob-shifts').classList.toggle('hidden', tab !== 'shifts');
+            document.querySelectorAll('nav button').forEach(b => b.classList.replace('tab-active', 'text-gray-400'));
+            btn.classList.add('tab-active');
+        }
+
+        function switchDesk(tab) {
+            document.getElementById('desk-orders').classList.toggle('hidden', tab !== 'orders');
+            document.getElementById('desk-cal').classList.toggle('hidden', tab !== 'cal');
+            document.getElementById('desk-btn-orders').classList.toggle('bg-white', tab === 'orders');
+            document.getElementById('desk-btn-cal').classList.toggle('bg-white', tab === 'cal');
+        }
     </script>
 </body>
 </html>
