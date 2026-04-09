@@ -164,34 +164,40 @@
         }
 
         async function saveOrder() {
-            const btn = document.getElementById('save-btn');
-            const data = {
-                address: document.getElementById('f-addr').value,
-                client_name: document.getElementById('f-name').value,
-                client_phone: document.getElementById('f-phone').value,
-                delivery_date: document.getElementById('f-date').value,
-                delivery_time: document.getElementById('f-time').value,
-                comment: document.getElementById('f-comm').value,
-                courier_id: document.getElementById('f-courier').value || null,
-                client_name_default: 'Теплосбережение'
-            };
+    const btn = document.getElementById('save-btn');
+    const data = {
+        address: document.getElementById('f-addr').value,
+        client_name: document.getElementById('f-name').value,
+        client_phone: document.getElementById('f-phone').value,
+        delivery_date: document.getElementById('f-date').value,
+        delivery_time: document.getElementById('f-time').value,
+        comment: document.getElementById('f-comm').value,
+        courier_id: document.getElementById('f-courier').value || null
+        // Строка client_name_default удалена, так как её нет в базе
+    };
 
-            if(!data.address) return alert("Адрес обязателен");
-            btn.disabled = true; btn.innerText = "СОХРАНЕНИЕ...";
+    if(!data.address) return alert("Адрес обязателен");
+    
+    btn.disabled = true; 
+    btn.innerText = "СОХРАНЕНИЕ...";
 
-            // Yielding to main thread (Fix INP)
-            setTimeout(async () => {
-                const { error } = await supabaseClient.from('deliveries').insert([data]);
-                if(error) alert("Ошибка: " + error.message);
-                else {
-                    document.getElementById('f-addr').value = ''; 
-                    document.getElementById('f-comm').value = '';
-                    await loadAdminData();
-                }
-                btn.disabled = false; btn.innerText = "СОЗДАТЬ ЗАКАЗ";
-            }, 50);
+    setTimeout(async () => {
+        const { error } = await supabaseClient.from('deliveries').insert([data]);
+        if(error) {
+            console.error(error);
+            alert("Ошибка базы: " + error.message);
+        } else {
+            // Очистка полей после успеха
+            document.getElementById('f-addr').value = ''; 
+            document.getElementById('f-name').value = '';
+            document.getElementById('f-phone').value = '';
+            document.getElementById('f-comm').value = '';
+            await loadAdminData();
         }
-
+        btn.disabled = false; 
+        btn.innerText = "СОЗДАТЬ ЗАКАЗ";
+    }, 50);
+}
         async function reassignCourier(oid, cid) {
             await supabaseClient.from('deliveries').update({ courier_id: cid || null }).eq('id', oid);
             loadAdminData();
