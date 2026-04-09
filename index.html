@@ -3,224 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Теплосбережение | Менеджер управления</title>
+    <title>Теплосбережение | Система управления</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=9b0b8d19-63e2-430d-946c-26070928d7a4&lang=ru_RU"></script>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background-color: #F9FAFB; color: #111827; }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: #F9FAFB; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none !important; }
         .ios-card { background: white; border-radius: 24px; border: 1px solid #E5E7EB; overflow: hidden; }
-        
-        /* Стили календаря */
-        .calendar-grid { 
-            display: grid; 
-            grid-template-columns: 160px repeat(12, 1fr); 
-            min-width: 1000px;
-            background: #F3F4F6;
-            gap: 1px;
-        }
+        .calendar-grid { display: grid; grid-template-columns: 200px repeat(12, 1fr); min-width: 1100px; background: #F3F4F6; gap: 1px; }
         .calendar-header { background: #F9FAFB; padding: 12px; text-align: center; font-size: 10px; font-weight: 800; color: #9CA3AF; text-transform: uppercase; }
-        .calendar-cell { background: white; min-height: 100px; padding: 8px; position: relative; }
-        
-        /* Цвета статусов */
-        .shift-active { background-color: #f0fdf4; } /* Даниил работает */
-        .delivery-chip { 
-            background: #9ec827; 
-            color: white; 
-            font-size: 10px; 
-            font-weight: 700; 
-            padding: 6px; 
-            border-radius: 8px; 
-            margin-bottom: 4px;
-            box-shadow: 0 2px 4px rgba(158,200,39,0.2);
-        }
-        .conflict-alert { border: 2px solid #EF4444 !important; } /* Заказ вне смены */
-
-        .hour-checkbox:checked + div { background: #9ec827; color: white; border-color: #9ec827; }
+        .calendar-cell { background: white; min-height: 80px; padding: 8px; border-top: 1px solid #F3F4F6; }
+        .shift-active { background-color: #f0fdf4; }
+        .delivery-chip { background: #9ec827; color: white; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 8px; margin-bottom: 2px; }
+        .tab-btn-active { background: white; color: #111827; shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-6">
-        <div class="w-20 h-20 bg-[#9ec827] rounded-3xl mb-8 flex items-center justify-center text-white text-4xl font-black shadow-2xl">Т</div>
+    <div id="auth-screen" class="fixed inset-0 z-[500] bg-white flex flex-col items-center justify-center p-6">
+        <div class="w-20 h-20 bg-[#9ec827] rounded-[24px] mb-8 flex items-center justify-center text-white text-4xl font-black shadow-2xl">Т</div>
         <div class="w-full max-w-sm space-y-4">
-            <input id="u-login" type="text" placeholder="Логин (admin / даниил)" class="w-full p-4 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827]">
-            <button onclick="globalLogin()" class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">ВОЙТИ В СИСТЕМУ</button>
+            <input id="u-login" type="text" placeholder="Логин" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827]">
+            <input id="u-pass" type="password" placeholder="Пароль" class="w-full p-5 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827]">
+            <button onclick="globalLogin()" class="w-full py-5 bg-[#9ec827] text-white font-bold rounded-2xl shadow-xl active:scale-95 transition">ВОЙТИ</button>
+            <p id="auth-err" class="text-red-500 text-xs font-bold text-center hidden">Неверный логин или пароль</p>
         </div>
     </div>
 
     <div id="manager-ui" class="hidden h-screen flex overflow-hidden">
         <aside class="w-72 bg-white border-r border-gray-100 p-8 flex flex-col">
-            <div class="text-xs font-black text-[#9ec827] mb-12 uppercase tracking-widest">Теплосбережение CRM</div>
+            <div class="text-[10px] font-black text-[#9ec827] mb-12 uppercase tracking-widest">Теплосбережение Admin</div>
             <nav class="space-y-2 flex-1">
-                <button onclick="switchDesk('orders')" id="btn-orders" class="w-full text-left p-4 rounded-2xl bg-gray-50 font-bold text-sm">📦 Доставки</button>
-                <button onclick="switchDesk('cal')" id="btn-cal" class="w-full text-left p-4 rounded-2xl text-gray-400 font-bold text-sm hover:bg-gray-50 transition">📅 Календарь смен</button>
+                <button onclick="switchDesk('orders')" id="nav-orders" class="w-full text-left p-4 rounded-2xl font-bold text-sm bg-gray-50">📦 Доставки</button>
+                <button onclick="switchDesk('cal')" id="nav-cal" class="w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50">📅 Мониторинг</button>
+                <button onclick="switchDesk('staff')" id="nav-staff" class="w-full text-left p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-gray-50">👥 Сотрудники</button>
             </nav>
-            <div class="p-4 bg-green-50 rounded-2xl">
-                <p class="text-[10px] font-bold text-green-600 uppercase mb-1">Курьер проекта</p>
-                <p class="text-sm font-black text-green-900">Даниил Разговоров</p>
-            </div>
+            <button onclick="location.reload()" class="text-xs font-bold text-red-400">Выйти</button>
         </aside>
 
         <main class="flex-1 overflow-auto bg-[#F9FAFB] p-12">
             <div id="desk-orders">
                 <div class="flex justify-between items-center mb-10">
-                    <h1 class="text-4xl font-black tracking-tight text-gray-900">Список доставок</h1>
-                    <button onclick="createNew()" class="bg-[#9ec827] text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:scale-105 transition">+ Создать заказ</button>
+                    <h1 class="text-4xl font-black">Доставки</h1>
+                    <button onclick="openOrderModal()" class="bg-[#9ec827] text-white px-8 py-4 rounded-2xl font-bold shadow-lg">+ Создать заказ</button>
                 </div>
-                <div class="ios-card">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                            <tr><th class="p-6">Дата/Время</th><th class="p-6">Метро</th><th class="p-6 text-center">Статус</th></tr>
-                        </thead>
-                        <tbody id="desk-data" class="divide-y divide-gray-50"></tbody>
-                    </table>
+                <div class="ios-card"><table class="w-full text-left"><tbody id="desk-data-list"></tbody></table></div>
+            </div>
+
+            <div id="desk-staff" class="hidden">
+                <div class="flex justify-between items-center mb-10">
+                    <h1 class="text-4xl font-black">Команда</h1>
+                    <button onclick="addEmployee()" class="bg-black text-white px-8 py-4 rounded-2xl font-bold shadow-lg">+ Добавить сотрудника</button>
                 </div>
+                <div class="grid grid-cols-3 gap-6" id="staff-list"></div>
             </div>
 
             <div id="desk-cal" class="hidden">
-                <h1 class="text-4xl font-black mb-10 tracking-tight">Мониторинг ресурсов</h1>
-                <div class="ios-card overflow-x-auto">
-                    <div class="calendar-grid" id="calendar-body">
-                        <div class="calendar-header">Сотрудник</div>
-                        ${[9,10,11,12,13,14,15,16,17,18,19,20].map(h => `<div class="calendar-header border-l border-gray-200">${h}:00</div>`).join('')}
-                        
-                        <div class="calendar-cell font-bold text-sm flex flex-col justify-center border-t border-gray-200">
-                            Даниил Разговоров
-                            <span class="text-[9px] text-green-500 uppercase mt-1">Основной график</span>
-                        </div>
-                        ${[9,10,11,12,13,14,15,16,17,18,19,20].map(h => `
-                            <div class="calendar-cell border-t border-l border-gray-100" id="m-slot-${h}"></div>
-                        `).join('')}
-                    </div>
-                </div>
-                <p class="mt-6 text-xs text-gray-400 font-medium italic">* Светло-зеленые ячейки — время, выбранное Даниилом для работы.</p>
+                <h1 class="text-4xl font-black mb-10">Мониторинг</h1>
+                <div class="ios-card overflow-x-auto"><div class="calendar-grid" id="calendar-render"></div></div>
             </div>
         </main>
     </div>
 
-    <div id="courier-ui" class="hidden min-h-screen pb-20">
-        <header class="p-6 pt-12 bg-white border-b border-gray-100">
-            <p class="text-[10px] font-black text-[#9ec827] uppercase mb-1">Личный кабинет</p>
-            <h1 class="text-3xl font-black">Даниил Разговоров</h1>
-        </header>
-
-        <nav class="flex p-4 gap-2">
-            <button onclick="tabMob('m-orders')" class="flex-1 py-3 bg-[#9ec827] text-white rounded-xl font-bold text-sm shadow-md">Заказы</button>
-            <button onclick="tabMob('m-shifts')" class="flex-1 py-3 bg-white text-gray-400 rounded-xl font-bold text-sm border border-gray-100">Моя смена</button>
-        </nav>
-
-        <div id="m-orders" class="p-4 space-y-4"></div>
-
-        <div id="m-shifts" class="hidden p-6">
-            <div class="ios-card p-6">
-                <h2 class="font-black text-gray-800 mb-6 uppercase text-xs tracking-widest">Выберите часы работы (сегодня)</h2>
-                <div class="grid grid-cols-3 gap-3">
-                    ${[9,10,11,12,13,14,15,16,17,18,19,20].map(h => `
-                        <label class="cursor-pointer">
-                            <input type="checkbox" class="hidden hour-checkbox" onchange="updateShift(${h}, this.checked)">
-                            <div class="p-4 text-center border-2 border-gray-50 rounded-2xl font-black text-gray-300 transition-all text-sm">${h}:00</div>
-                        </label>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
+    <div id="courier-ui" class="hidden min-h-screen bg-[#F2F2F7] pb-20">
+        <header class="p-8 bg-white border-b"><h1 id="courier-name-display" class="text-3xl font-black">Курьер</h1></header>
+        <div id="courier-orders" class="p-4 space-y-4"></div>
     </div>
 
     <script>
         const SB_URL = 'https://qwhqlwqdlatajzsjdzyu.supabase.co';
         const SB_KEY = 'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY';
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+        let currentUser = null;
 
-        // Вход
-        function globalLogin() {
-            const l = document.getElementById('u-login').value.trim().toLowerCase();
-            document.getElementById('auth-screen').classList.add('hidden');
-            if(l === 'admin') { 
-                document.getElementById('manager-ui').classList.remove('hidden'); 
-                loadManagerData(); 
-            } else { 
-                document.getElementById('courier-ui').classList.remove('hidden'); 
-                loadCourierData(); 
-            }
-        }
+        async function globalLogin() {
+            const l = document.getElementById('u-login').value;
+            const p = document.getElementById('u-pass').value;
+            const { data, error } = await supabaseClient.from('employees').select('*').eq('login', l).eq('password', p).single();
 
-        // Загрузка для менеджера
-        async function loadManagerData() {
-            const { data: deliveries } = await supabaseClient.from('deliveries').select('*');
-            const { data: shifts } = await supabaseClient.from('shifts').select('*'); // Таблица для смен
-
-            const tbody = document.getElementById('desk-data');
-            tbody.innerHTML = '';
-
-            // Очистка слотов календаря перед заполнением
-            for(let h=9; h<=20; h++) {
-                const slot = document.getElementById(`m-slot-${h}`);
-                slot.innerHTML = '';
-                slot.className = 'calendar-cell border-t border-l border-gray-100';
-            }
-
-            // Заполнение смен (подсветка фона)
-            shifts?.forEach(s => {
-                if(s.is_working) {
-                    document.getElementById(`m-slot-${s.hour}`).classList.add('shift-active');
+            if (data) {
+                currentUser = data;
+                document.getElementById('auth-screen').classList.add('hidden');
+                if (data.role === 'admin') {
+                    document.getElementById('manager-ui').classList.remove('hidden');
+                    loadManagerData();
+                } else {
+                    document.getElementById('courier-ui').classList.remove('hidden');
+                    document.getElementById('courier-name-display').innerText = data.full_name;
+                    loadCourierOrders();
                 }
-            });
-
-            // Заполнение заказов
-            for(const item of (deliveries || [])) {
-                const metro = await getMetro(item.address);
-                const hour = parseInt(item.delivery_time);
-
-                // В таблицу
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="p-6 font-black text-gray-400">${item.delivery_time}</td>
-                        <td class="p-6 font-black text-[#9ec827]">Ⓜ ${metro}</td>
-                        <td class="p-6 text-right"><span class="bg-blue-50 text-blue-500 px-4 py-1 rounded-full text-[10px] font-black uppercase">Даниил Р.</span></td>
-                    </tr>`;
-
-                // В календарь
-                if(hour >= 9 && hour <= 20) {
-                    const slot = document.getElementById(`m-slot-${hour}`);
-                    slot.innerHTML += `<div class="delivery-chip">Ⓜ ${metro}</div>`;
-                }
+            } else {
+                document.getElementById('auth-err').classList.remove('hidden');
             }
         }
 
-        // Обновление смены курьером
-        async function updateShift(hour, status) {
-            await supabaseClient.from('shifts').upsert({ hour: hour, is_working: status, courier_name: 'Даниил Разговоров' }, { onConflict: 'hour' });
+        // УПРАВЛЕНИЕ СОТРУДНИКАМИ
+        async function addEmployee() {
+            const name = prompt("ФИО сотрудника:");
+            const login = prompt("Придумайте логин:");
+            const pass = prompt("Придумайте пароль:");
+            if (name && login && pass) {
+                await supabaseClient.from('employees').insert([{ full_name: name, login: login, password: pass, role: 'courier' }]);
+                loadEmployees();
+            }
         }
 
-        async function createNew() {
-            const a = prompt("Адрес:");
-            const t = prompt("Время (чч:мм):");
-            if(a && t) {
-                await supabaseClient.from('deliveries').insert([{ address: a, delivery_time: t, client_name: 'Новый клиент' }]);
+        async function loadEmployees() {
+            const { data } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
+            const container = document.getElementById('staff-list');
+            container.innerHTML = data.map(e => `
+                <div class="ios-card p-6">
+                    <div class="w-12 h-12 bg-gray-100 rounded-2xl mb-4 flex items-center justify-center text-xl">👤</div>
+                    <h3 class="font-black text-gray-800">${e.full_name}</h3>
+                    <p class="text-xs text-gray-400 font-bold uppercase mt-1">Логин: ${e.login}</p>
+                </div>
+            `).join('');
+        }
+
+        // СОЗДАНИЕ ЗАКАЗА С ВЫБОРОМ КУРЬЕРА
+        async function openOrderModal() {
+            const { data: couriers } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
+            const addr = prompt("Адрес доставки:");
+            if (!addr) return;
+            
+            let courierList = couriers.map((c, i) => `${i+1}. ${c.full_name}`).join('\n');
+            const courierIdx = prompt(`Выберите курьера (введите номер):\n${courierList}`);
+            const selectedCourier = couriers[parseInt(courierIdx) - 1];
+
+            if (selectedCourier) {
+                const time = prompt("Время (например, 15:00):");
+                await supabaseClient.from('deliveries').insert([{ 
+                    address: addr, 
+                    courier_id: selectedCourier.id, 
+                    delivery_time: time,
+                    client_name: 'Клиент Теплосбережение'
+                }]);
                 loadManagerData();
             }
         }
 
-        async function getMetro(address) {
-            try {
-                const res = await ymaps.geocode(address, { kind: 'metro', results: 1 });
-                return res.geoObjects.get(0).getName().replace('метро ', '');
-            } catch { return '—'; }
+        async function loadManagerData() {
+            const { data: deliveries } = await supabaseClient.from('deliveries').select('*, employees(full_name)');
+            const tbody = document.getElementById('desk-data-list');
+            tbody.innerHTML = deliveries.map(d => `
+                <tr class="border-b border-gray-50">
+                    <td class="p-6 font-black text-xs text-gray-400">${d.delivery_time}</td>
+                    <td class="p-6 font-bold">${d.address}</td>
+                    <td class="p-6 text-right"><span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">${d.employees?.full_name || 'Не назначен'}</span></td>
+                </tr>
+            `).join('');
+            loadEmployees();
+            renderCalendar(deliveries);
+        }
+
+        async function renderCalendar(deliveries) {
+            const { data: staff } = await supabaseClient.from('employees').select('*').eq('role', 'courier');
+            const render = document.getElementById('calendar-render');
+            let html = `<div class="calendar-header">Сотрудник</div>` + [...Array(12)].map((_,i) => `<div class="calendar-header border-l">${i+9}:00</div>`).join('');
+            
+            staff.forEach(s => {
+                html += `<div class="calendar-cell font-bold text-xs flex items-center border-t">${s.full_name}</div>`;
+                for(let h=9; h<=20; h++) {
+                    const dInHour = deliveries.filter(d => parseInt(d.delivery_time) === h && d.courier_id === s.id);
+                    html += `<div class="calendar-cell border-t border-l">${dInHour.map(d => `<div class="delivery-chip">📦 Заказ</div>`).join('')}</div>`;
+                }
+            });
+            render.innerHTML = html;
+        }
+
+        async function loadCourierOrders() {
+            const { data } = await supabaseClient.from('deliveries').select('*').eq('courier_id', currentUser.id);
+            document.getElementById('courier-orders').innerHTML = data.map(d => `
+                <div class="ios-card p-6">
+                    <div class="flex justify-between mb-4"><span class="text-xl font-black text-[#9ec827]">${d.delivery_time}</span></div>
+                    <h2 class="text-2xl font-black">${d.address}</h2>
+                    <button class="w-full mt-6 py-4 bg-[#9ec827] text-white font-bold rounded-2xl">ДОСТАВЛЕНО</button>
+                </div>
+            `).join('');
         }
 
         function switchDesk(tab) {
             document.getElementById('desk-orders').classList.toggle('hidden', tab !== 'orders');
+            document.getElementById('desk-staff').classList.toggle('hidden', tab !== 'staff');
             document.getElementById('desk-cal').classList.toggle('hidden', tab !== 'cal');
-            document.getElementById('btn-orders').className = tab === 'orders' ? 'w-full text-left p-4 rounded-2xl bg-gray-50 font-bold text-sm' : 'w-full text-left p-4 rounded-2xl text-gray-400 font-bold text-sm';
-            document.getElementById('btn-cal').className = tab === 'cal' ? 'w-full text-left p-4 rounded-2xl bg-gray-50 font-bold text-sm' : 'w-full text-left p-4 rounded-2xl text-gray-400 font-bold text-sm';
-        }
-
-        function tabMob(id) {
-            document.getElementById('m-orders').classList.add('hidden');
-            document.getElementById('m-shifts').classList.add('hidden');
-            document.getElementById(id).classList.remove('hidden');
         }
     </script>
 </body>
