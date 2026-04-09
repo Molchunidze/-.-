@@ -95,16 +95,23 @@
         const SB_KEY = 'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY';
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-        function mLogin() {
-            const l = document.getElementById('ml').value.trim().toLowerCase();
-            const p = document.getElementById('mp').value.trim();
-            if(l === 'admin' && p === 'admim') {
-                document.getElementById('m-auth').classList.add('hidden');
-                document.getElementById('m-side').classList.remove('hidden');
-                document.getElementById('m-main').classList.remove('hidden');
-                loadData();
-            } else { alert('Ошибка доступа'); }
-        }
+       function mLogin() {
+    // Получаем значения и очищаем их от случайных пробелов
+    const l = document.getElementById('ml').value.trim();
+    const p = document.getElementById('mp').value.trim();
+    
+    console.log("Попытка входа:", l, p); // Посмотрите в консоль F12, если не пускает
+
+    // Проверяем на admin / admin
+    if (l === 'admin' && p === 'admin') {
+        document.getElementById('m-auth').classList.add('hidden');
+        document.getElementById('m-side').classList.remove('hidden');
+        document.getElementById('m-main').classList.remove('hidden');
+        loadData();
+    } else {
+        alert('Ошибка доступа! Введите логин: admin и пароль: admin');
+    }
+}
 
         function mTab(t) {
             document.getElementById('tab-orders').classList.toggle('hidden', t !== 'orders');
