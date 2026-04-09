@@ -2,85 +2,131 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Теплосбережение - Курьер</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Теплосбережение</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: #F2F2F7; }
+        .ios-blur { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .hidden { display: none; }
+        .active-tab { color: #9ec827; }
+        .tab-content { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<body class="pb-24">
 
-    <header class="bg-white border-b border-gray-200 p-4 sticky top-0 z-50 flex justify-between items-center shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-[#9ec827] rounded flex items-center justify-center text-white font-bold text-xl shadow-inner">
-                Т
-            </div>
-            <h1 class="font-bold text-gray-800 text-lg leading-tight uppercase tracking-wide">
-                Теплосбережение<br><span class="text-[#9ec827] text-xs font-bold tracking-widest">ДОСТАВКА</span>
-            </h1>
-        </div>
-        <button class="text-gray-400 hover:text-gray-600">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-        </button>
-    </header>
-
-    <nav class="flex justify-around bg-white px-2 pt-3 shadow-sm mb-5 border-b border-gray-200">
-        <button class="text-[#9ec827] font-bold border-b-4 border-[#9ec827] pb-2 px-2">Заказы</button>
-        <button class="text-gray-400 font-semibold pb-2 px-2 hover:text-gray-600 transition">Смены</button>
-        <button class="text-gray-400 font-semibold pb-2 px-2 hover:text-gray-600 transition">Календарь</button>
-    </nav>
-
-    <main class="px-4 pb-8 flex flex-col gap-5">
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center px-10">
+        <div class="w-20 h-20 bg-[#9ec827] rounded-2xl mb-6 shadow-xl flex items-center justify-center text-white text-4xl font-bold">Т</div>
+        <h1 class="text-2xl font-bold mb-8 text-center text-gray-800 uppercase tracking-tight">Теплосбережение<br><span class="text-[#9ec827]">Доставка</span></h1>
         
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div class="border-b border-gray-100 p-4 pb-3 flex justify-between items-center bg-gray-50">
-                <span class="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-sm tracking-wide">14:00 - 16:00</span>
-                <span class="text-sm text-gray-500 font-medium">12 Марта</span>
-            </div>
-            
-            <div class="p-4">
-                <h2 class="text-lg font-bold text-gray-800 mb-1">г. Москва, ул. Ленина, д. 45, кв. 12</h2>
-                
-                <div class="flex items-center gap-2 text-sm text-[#9ec827] font-medium mb-4" id="metro-info-1">
-                    <span>🚇 Загрузка метро...</span>
-                </div>
-
-                <div class="bg-gray-50 border border-gray-100 p-3 rounded mb-4 text-sm text-gray-600">
-                    <div class="flex justify-between mb-1">
-                        <span class="font-semibold text-gray-700">Иван Иванов</span>
-                        <a href="tel:+79991234567" class="text-[#9ec827] font-bold hover:underline">+7 (999) 123-45-67</a>
-                    </div>
-                    <div class="border-t border-gray-200 my-2"></div>
-                    <p><span class="font-semibold text-gray-700">Груз:</span> Терморегулятор (2 шт), Греющий кабель (15м)</p>
-                </div>
-
-                <div id="map-1" class="w-full h-32 bg-gray-200 rounded mb-4 border border-gray-200"></div>
-
-                <div class="flex gap-3">
-                    <button class="flex-1 bg-white border-2 border-[#9ec827] text-[#9ec827] hover:bg-[#9ec827] hover:text-white font-bold py-2.5 rounded transition" onclick="alert('Успешно')">
-                        Вручено
-                    </button>
-                    <button class="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-2.5 px-4 rounded transition" onclick="alert('Отмена')">
-                        Отказ
-                    </button>
-                </div>
-            </div>
+        <div class="w-full space-y-3">
+            <input id="login-input" type="text" placeholder="Логин" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 ring-[#9ec827]">
+            <input id="pass-input" type="password" placeholder="Пароль" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 ring-[#9ec827]">
+            <button onclick="handleLogin()" class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-xl shadow-lg active:scale-95 transition">ВОЙТИ</button>
         </div>
-    </main>
+    </div>
+
+    <div id="app-content" class="hidden">
+        
+        <header class="ios-blur sticky top-0 z-50 px-5 pt-12 pb-4 border-b border-gray-200 flex justify-between items-end">
+            <div>
+                <p id="current-date" class="text-[13px] font-semibold text-gray-400 uppercase tracking-tight"></p>
+                <h1 id="page-title" class="text-3xl font-extrabold tracking-tight text-black">Доставки</h1>
+            </div>
+            <button onclick="handleLogout()" class="text-red-500 text-sm font-bold mb-1">Выход</button>
+        </header>
+
+        <main id="tab-deliveries" class="tab-content px-4 pt-6 space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
+                <p class="text-gray-400">У вас пока нет активных доставок из Битрикс24</p>
+            </div>
+        </main>
+
+        <main id="tab-shifts" class="tab-content hidden px-4 pt-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm space-y-4">
+                <h3 class="font-bold text-lg">Выставить смену</h3>
+                <div>
+                    <label class="text-xs text-gray-400 uppercase font-bold">Выберите день</label>
+                    <input type="date" class="w-full p-3 bg-gray-50 rounded-lg mt-1 border-none outline-none">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 uppercase font-bold">Время</label>
+                    <select class="w-full p-3 bg-gray-50 rounded-lg mt-1 border-none outline-none">
+                        <option>09:00 - 18:00</option>
+                        <option>10:00 - 22:00</option>
+                        <option>Свой вариант</option>
+                    </select>
+                </div>
+                <button onclick="alert('Смена сохранена!')" class="w-full py-3 bg-[#9ec827] text-white font-bold rounded-xl">Сохранить</button>
+            </div>
+        </main>
+
+        <main id="tab-calendar" class="tab-content hidden px-4 pt-6 text-center">
+            <div class="bg-white p-8 rounded-2xl shadow-sm">
+                <p class="text-gray-400 italic">Здесь будет календарь смен всей команды Теплосбережения</p>
+            </div>
+        </main>
+
+        <nav class="ios-blur fixed bottom-0 left-0 right-0 h-20 border-t border-gray-200 flex justify-around items-start pt-2 px-6">
+            <button onclick="switchTab('deliveries', 'Доставки', this)" class="flex flex-col items-center gap-1 active-tab">
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span class="text-[10px] font-medium">Заказы</span>
+            </button>
+            <button onclick="switchTab('shifts', 'Мои смены', this)" class="flex flex-col items-center gap-1 text-gray-400">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-[10px] font-medium">Смены</span>
+            </button>
+            <button onclick="switchTab('calendar', 'Календарь', this)" class="flex flex-col items-center gap-1 text-gray-400">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="text-[10px] font-medium">Общий</span>
+            </button>
+        </nav>
+    </div>
 
     <script>
-        ymaps.ready(init);
-        function init() {
-            const address = "Москва, улица Ленина, 45";
-            ymaps.geocode(address).then(function (res) {
-                const coords = res.geoObjects.get(0).geometry.getCoordinates();
-                const map = new ymaps.Map("map-1", { center: coords, zoom: 15, controls: [] });
-                map.geoObjects.add(new ymaps.Placemark(coords, { preset: 'islands#greenDotIcon' }));
-                ymaps.geocode(coords, { kind: 'metro', results: 1 }).then(function (mRes) {
-                    const metro = mRes.geoObjects.get(0);
-                    document.getElementById('metro-info-1').innerHTML = metro ? `🚇 ${metro.properties.get('name')}` : "Метро не найдено";
-                });
-            });
+        // ЛОГИКА АВТОРИЗАЦИИ
+        function handleLogin() {
+            const login = document.getElementById('login-input').value;
+            const pass = document.getElementById('pass-input').value;
+
+            // Простая проверка (в реальности нужно проверять в БД Supabase)
+            if (login === 'курьер' && pass === '123') {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+            } else {
+                alert('Неверный логин или пароль! Попробуйте курьер / 123');
+            }
         }
+
+        function handleLogout() {
+            if(confirm('Выйти из приложения?')) {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        }
+
+        // ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+        function switchTab(tabId, title, btn) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            // Сбросить цвет всех иконок
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab', 'text-[#9ec827]'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.add('text-gray-400'));
+
+            // Показать нужную вкладку
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('page-title').innerText = title;
+            
+            // Подсветить кнопку
+            btn.classList.add('active-tab', 'text-[#9ec827]');
+            btn.classList.remove('text-gray-400');
+        }
+
+        // Дата
+        const options = { weekday: 'long', day: 'numeric', month: 'long' };
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('ru-RU', options);
     </script>
 </body>
 </html>
