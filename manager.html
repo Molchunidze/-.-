@@ -2,116 +2,120 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Теплосбережение | Менеджер</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #F5F5F7; }
-        .sidebar { background: rgba(232, 232, 237, 0.6); backdrop-filter: blur(20px); }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #F5F5F7; }
+        .sidebar { background: rgba(232, 232, 237, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
         .hidden { display: none !important; }
-        .active-nav { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #333 !important; }
-        .grid-hours { display: grid; grid-template-columns: 120px repeat(12, 1fr); gap: 8px; }
+        .active-nav { background: white; shadow: 0 1px 3px rgba(0,0,0,0.1); color: #000 !important; font-weight: 800; }
+        .grid-hours { display: grid; grid-template-columns: 150px repeat(12, 1fr); gap: 10px; min-width: 1000px; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <div id="m-auth" class="fixed inset-0 z-[100] bg-[#F5F5F7] flex items-center justify-center">
-        <div class="bg-white p-10 rounded-[32px] shadow-2xl w-96 text-center">
+    <div id="m-auth" class="fixed inset-0 z-[100] bg-gray-100 flex items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-[32px] shadow-2xl w-full max-w-sm text-center">
             <div class="w-16 h-16 bg-[#9ec827] rounded-2xl mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl shadow-lg">Т</div>
-            <h2 class="text-xl font-bold mb-6 text-gray-800 tracking-tight">Вход для персонала</h2>
-            <input id="ml" type="text" placeholder="Логин" class="w-full p-4 bg-gray-100 rounded-xl mb-3 outline-none focus:ring-2 ring-[#9ec827]">
-            <input id="mp" type="password" placeholder="Пароль" class="w-full p-4 bg-gray-100 rounded-xl mb-8 outline-none focus:ring-2 ring-[#9ec827]">
-            <button onclick="mLogin()" class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-xl hover:shadow-lg active:scale-95 transition">Войти</button>
+            <h2 class="text-2xl font-extrabold mb-2 text-gray-800">Control Panel</h2>
+            <p class="text-gray-400 text-sm mb-8">Введите данные для доступа</p>
+            
+            <div class="space-y-4">
+                <input id="ml" type="text" placeholder="Логин" autocomplete="off"
+                       class="w-full p-4 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all">
+                <input id="mp" type="password" placeholder="Пароль" autocomplete="off"
+                       class="w-full p-4 bg-gray-50 rounded-2xl outline-none border-2 border-transparent focus:border-[#9ec827] transition-all">
+                
+                <button onclick="mLogin()" 
+                        class="w-full py-4 bg-[#9ec827] text-white font-bold rounded-2xl shadow-lg hover:opacity-90 active:scale-95 transition-all">
+                    ВОЙТИ
+                </button>
+                
+                <p id="debug-error" class="text-red-500 text-xs font-bold mt-2 hidden"></p>
+            </div>
         </div>
     </div>
 
     <aside id="m-side" class="sidebar w-64 p-6 border-r border-gray-200 hidden flex flex-col">
-        <div class="flex items-center gap-3 mb-10 px-2">
-            <div class="w-8 h-8 bg-[#9ec827] rounded-lg"></div>
-            <h1 class="font-black text-[10px] uppercase tracking-tighter text-gray-600">Теплосбережение</h1>
+        <div class="mb-10 px-2">
+            <h1 class="font-black text-xs uppercase tracking-widest text-[#9ec827]">Теплосбережение</h1>
         </div>
-        <nav class="space-y-1">
-            <button id="btn-orders" onclick="mTab('orders')" class="w-full text-left p-3 rounded-xl font-bold text-sm active-nav">📦 Доставки</button>
-            <button id="btn-cal" onclick="mTab('cal')" class="w-full text-left p-3 text-gray-500 font-bold text-sm hover:bg-white/50 rounded-xl">📅 Календарь часов</button>
+        <nav class="space-y-2 flex-1">
+            <button id="btn-orders" onclick="mTab('orders')" class="w-full text-left p-4 rounded-2xl text-sm font-bold text-gray-500 active-nav transition-all">📦 Доставки</button>
+            <button id="btn-cal" onclick="mTab('cal')" class="w-full text-left p-4 rounded-2xl text-sm font-bold text-gray-500 hover:bg-white/50 transition-all">📅 График смен</button>
         </nav>
-        <button onclick="location.reload()" class="mt-auto p-4 text-xs font-bold text-red-400 uppercase text-center">Выход</button>
+        <button onclick="location.reload()" class="p-4 text-xs font-bold text-red-500 uppercase hover:bg-red-50 rounded-2xl transition-all">Выход</button>
     </aside>
 
-    <main id="m-main" class="flex-1 flex flex-col hidden overflow-hidden">
-        
+    <main id="m-main" class="flex-1 flex flex-col hidden overflow-hidden bg-white">
         <section id="tab-orders" class="flex flex-col h-full">
-            <header class="p-8 flex justify-between items-end">
-                <h2 class="text-3xl font-black tracking-tight text-gray-800">Активные заказы</h2>
-                <button onclick="addNew()" class="bg-[#9ec827] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:scale-105 transition-all">+ Новый заказ</button>
+            <header class="p-10 flex justify-between items-center">
+                <h2 class="text-4xl font-black tracking-tighter">Заказы</h2>
+                <button onclick="addNew()" class="bg-black text-white px-8 py-3 rounded-2xl font-bold hover:bg-[#9ec827] transition-all shadow-xl">
+                    + Создать
+                </button>
             </header>
-            <div class="px-8 pb-8 flex-1 overflow-auto">
-                <div class="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+            <div class="px-10 pb-10 flex-1 overflow-auto">
+                <div class="border border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
                     <table class="w-full text-left">
-                        <thead class="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
-                            <tr><th class="p-5">Адрес</th><th class="p-5">Клиент</th><th class="p-5">Товары</th><th class="p-5 text-right">Статус</th></tr>
+                        <thead class="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <tr>
+                                <th class="p-6">Адрес</th>
+                                <th class="p-6">Клиент</th>
+                                <th class="p-6">Приборы</th>
+                                <th class="p-6 text-right">Статус</th>
+                            </tr>
                         </thead>
-                        <tbody id="mgr-data" class="divide-y divide-gray-50 text-sm"></tbody>
+                        <tbody id="mgr-data" class="divide-y divide-gray-50">
+                            </tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <section id="tab-cal" class="hidden flex flex-col h-full">
-            <header class="p-8">
-                <h2 class="text-3xl font-black tracking-tight text-gray-800">Почасовая загрузка</h2>
-            </header>
-            <div class="px-8 flex-1 overflow-auto">
-                <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm min-w-[1000px]">
-                    <div class="grid-hours border-b border-gray-100 pb-4 mb-4 text-[10px] font-black text-gray-300 uppercase">
-                        <div>Курьер</div>
-                        <div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div><div>14:00</div>
-                        <div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div>
-                    </div>
-                    <div class="grid-hours py-4 items-center border-b border-gray-50 hover:bg-gray-50 rounded-xl transition">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-[10px]">АК</div>
-                            <span class="text-xs font-bold">А. Кузнецов</span>
-                        </div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-[#9ec827]"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-[#9ec827]"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-[#9ec827]"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-[#9ec827]"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                        <div class="flex justify-center"><div class="w-5 h-5 rounded-md bg-gray-100"></div></div>
-                    </div>
+        <section id="tab-cal" class="hidden flex flex-col h-full p-10">
+            <h2 class="text-4xl font-black tracking-tighter mb-10">Мониторинг часов</h2>
+            <div class="bg-gray-50 p-8 rounded-[40px] overflow-x-auto border border-gray-100">
+                <div class="grid-hours mb-6 text-[10px] font-black text-gray-300 uppercase">
+                    <div>Курьер</div>
+                    ${[9,10,11,12,13,14,15,16,17,18,19,20].map(h => `<div class="text-center">${h}:00</div>`).join('')}
+                </div>
+                <div class="grid-hours items-center py-4 border-b border-gray-100">
+                    <div class="font-bold text-sm">Алексей К.</div>
+                    ${Array(12).fill(0).map(() => `<div class="flex justify-center"><div class="w-5 h-5 rounded-lg bg-[#9ec827]"></div></div>`).join('')}
                 </div>
             </div>
         </section>
     </main>
 
     <script>
+        // Данные Supabase
         const SB_URL = 'https://qwhqlwqdlatajzsjdzyu.supabase.co';
         const SB_KEY = 'sb_publishable_8RVMnfTZ6iGC4ob2RS0X7Q_c9o0PzNY';
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-       function mLogin() {
-    // Получаем значения и очищаем их от случайных пробелов
-    const l = document.getElementById('ml').value.trim();
-    const p = document.getElementById('mp').value.trim();
-    
-    console.log("Попытка входа:", l, p); // Посмотрите в консоль F12, если не пускает
+        // Функция входа
+        function mLogin() {
+            const user = document.getElementById('ml').value.trim();
+            const pass = document.getElementById('mp').value.trim();
+            const errorLabel = document.getElementById('debug-error');
 
-    // Проверяем на admin / admin
-    if (l === 'admin' && p === 'admin') {
-        document.getElementById('m-auth').classList.add('hidden');
-        document.getElementById('m-side').classList.remove('hidden');
-        document.getElementById('m-main').classList.remove('hidden');
-        loadData();
-    } else {
-        alert('Ошибка доступа! Введите логин: admin и пароль: admin');
-    }
-}
+            // Очищаем прошлые ошибки
+            errorLabel.classList.add('hidden');
+
+            // Проверка (используем admin / admin)
+            if (user === 'admin' && pass === 'admin') {
+                document.getElementById('m-auth').classList.add('hidden');
+                document.getElementById('m-side').classList.remove('hidden');
+                document.getElementById('m-main').classList.remove('hidden');
+                loadData();
+            } else {
+                errorLabel.innerText = "Неверный логин или пароль!";
+                errorLabel.classList.remove('hidden');
+            }
+        }
 
         function mTab(t) {
             document.getElementById('tab-orders').classList.toggle('hidden', t !== 'orders');
@@ -121,27 +125,34 @@
         }
 
         async function loadData() {
-            const { data } = await supabaseClient.from('deliveries').select('*');
-            if(data) {
-                document.getElementById('mgr-data').innerHTML = data.map(i => `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-5 font-bold text-gray-800">${i.address}</td>
-                        <td class="p-5">${i.client_name}</td>
-                        <td class="p-5 text-gray-500">${i.items}</td>
-                        <td class="p-5 text-right"><span class="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded-lg uppercase tracking-tighter">В работе</span></td>
-                    </tr>
-                `).join('');
-            }
+            try {
+                const { data, error } = await supabaseClient.from('deliveries').select('*');
+                const tbody = document.getElementById('mgr-data');
+                
+                if (data) {
+                    tbody.innerHTML = data.map(i => `
+                        <tr class="hover:bg-gray-50 transition-all">
+                            <td class="p-6 font-bold">${i.address}</td>
+                            <td class="p-6 text-gray-500">${i.client_name}</td>
+                            <td class="p-6 text-gray-400">${i.items || 'Метрика'}</td>
+                            <td class="p-6 text-right"><span class="bg-[#9ec827]/10 text-[#9ec827] px-3 py-1 rounded-full text-[10px] font-black uppercase">В пути</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) { console.log(e); }
         }
 
         async function addNew() {
-            const addr = prompt("Адрес:");
-            const name = prompt("Имя:");
-            if(addr && name) {
-                await supabaseClient.from('deliveries').insert([{ address: addr, client_name: name, items: 'Метрика KSD', status: 'pending' }]);
+            const a = prompt("Адрес:");
+            const n = prompt("Клиент:");
+            if(a && n) {
+                await supabaseClient.from('deliveries').insert([{ address: a, client_name: n, status: 'new' }]);
                 loadData();
             }
         }
+
+        // Слушатель Enter
+        document.addEventListener('keypress', (e) => { if(e.key === 'Enter') mLogin(); });
     </script>
 </body>
 </html>
